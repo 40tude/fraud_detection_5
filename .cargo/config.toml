@@ -1,0 +1,8 @@
+[build]
+# Use native CPU optimizations for all builds
+# rustc --print cfg -C target-cpu=native | Select-String "target_feature"
+# Get-CimInstance -ClassName Win32_Processor | Select-Object Name, Caption, NumberOfCores, NumberOfLogicalProcessors
+rustflags = ["-C", "target-cpu=native"]
+
+# Avoid any issue with OneDrive
+target-dir = "C:/Users/phili/rust_builds/Documents/Programmation/rust/13_fraud_detection_5"
