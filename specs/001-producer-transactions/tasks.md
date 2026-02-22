@@ -19,11 +19,11 @@
 
 **Purpose**: Initialize workspace structure, dependency versions, and lint configuration.
 
-- [ ] T001 Create root Cargo.toml with [workspace] members (domain, producer, fraud_detection), [workspace.dependencies] (uuid 1, thiserror 2, log 0.4, rand 0.9, tokio 1 with rt+macros+time, env_logger 0.11, anyhow 1), and [workspace.lints.clippy] / [workspace.lints.rust] per ms-rust M-STATIC-VERIFICATION in Cargo.toml
-- [ ] T002 [P] Create crates/domain/Cargo.toml with [package] metadata, [lints] workspace = true, and [dependencies] referencing workspace deps (uuid, thiserror, log, tokio) in crates/domain/Cargo.toml
-- [ ] T003 [P] Create crates/producer/Cargo.toml with [package] metadata, [lints] workspace = true, and [dependencies] referencing workspace deps (domain path dep, rand, thiserror, log, tokio) in crates/producer/Cargo.toml
-- [ ] T004 [P] Create crates/fraud_detection/Cargo.toml with [[bin]] entry, [lints] workspace = true, and [dependencies] referencing workspace deps (domain, producer path deps, anyhow, env_logger, log, tokio) in crates/fraud_detection/Cargo.toml
-- [ ] T005 Create .cargo/config.toml with [build] target-dir redirect and [target.x86_64-pc-windows-msvc] rustflags = ["-C", "target-cpu=native"] in .cargo/config.toml
+- [X] T001 Create root Cargo.toml with [workspace] members (domain, producer, fraud_detection), [workspace.dependencies] (uuid 1, thiserror 2, log 0.4, rand 0.9, tokio 1 with rt+macros+time, env_logger 0.11, anyhow 1), and [workspace.lints.clippy] / [workspace.lints.rust] per ms-rust M-STATIC-VERIFICATION in Cargo.toml
+- [X] T002 [P] Create crates/domain/Cargo.toml with [package] metadata, [lints] workspace = true, and [dependencies] referencing workspace deps (uuid, thiserror, log, tokio) in crates/domain/Cargo.toml
+- [X] T003 [P] Create crates/producer/Cargo.toml with [package] metadata, [lints] workspace = true, and [dependencies] referencing workspace deps (domain path dep, rand, thiserror, log, tokio) in crates/producer/Cargo.toml
+- [X] T004 [P] Create crates/fraud_detection/Cargo.toml with [[bin]] entry, [lints] workspace = true, and [dependencies] referencing workspace deps (domain, producer path deps, anyhow, env_logger, log, tokio) in crates/fraud_detection/Cargo.toml
+- [X] T005 Create .cargo/config.toml with [build] target-dir redirect and [target.x86_64-pc-windows-msvc] rustflags = ["-C", "target-cpu=native"] in .cargo/config.toml
 
 **Checkpoint**: `cargo build` compiles an empty workspace without errors.
 
@@ -35,11 +35,11 @@
 
 **CRITICAL**: These are shared across all pipeline components (FR-003). Implement before any producer logic.
 
-- [ ] T006 Write failing tests transaction_fields and buffer_error_variants in crates/domain/src/lib.rs (add empty type stubs so tests compile but assertions fail -- TDD red step)
-- [ ] T007 Write failing test buffer1_impl in crates/domain/src/lib.rs (define a local TestBuffer struct implementing a stub Buffer1 trait; test that write_batch stores transactions -- TDD red step)
-- [ ] T008 Implement Transaction struct with #[derive(Debug, Clone, PartialEq)] and pub fields: id: uuid::Uuid, amount: f64, last_name: String in crates/domain/src/lib.rs
-- [ ] T009 Implement BufferError enum with #[derive(Debug, Clone, PartialEq)] and thiserror::Error (Full { capacity: usize }, Closed variants with #[error] messages) in crates/domain/src/lib.rs
-- [ ] T010 Implement Buffer1 trait with #[expect(async_fn_in_trait, reason = "no dyn dispatch; internal workspace only")] and async fn write_batch(&self, batch: Vec<Transaction>) -> Result<(), BufferError> in crates/domain/src/lib.rs
+- [X] T006 Write failing tests transaction_fields and buffer_error_variants in crates/domain/src/lib.rs (add empty type stubs so tests compile but assertions fail -- TDD red step)
+- [X] T007 Write failing test buffer1_impl in crates/domain/src/lib.rs (define a local TestBuffer struct implementing a stub Buffer1 trait; test that write_batch stores transactions -- TDD red step)
+- [X] T008 Implement Transaction struct with #[derive(Debug, Clone, PartialEq)] and pub fields: id: uuid::Uuid, amount: f64, last_name: String in crates/domain/src/lib.rs
+- [X] T009 Implement BufferError enum with #[derive(Debug, Clone, PartialEq)] and thiserror::Error (Full { capacity: usize }, Closed variants with #[error] messages) in crates/domain/src/lib.rs
+- [X] T010 Implement Buffer1 trait with #[expect(async_fn_in_trait, reason = "no dyn dispatch; internal workspace only")] and async fn write_batch(&self, batch: Vec<Transaction>) -> Result<(), BufferError> in crates/domain/src/lib.rs
 
 **Checkpoint**: `cargo test -p domain` passes 3 tests (transaction_fields, buffer_error_variants, buffer1_impl).
 
@@ -53,16 +53,16 @@
 
 ### Tests for User Story 1 (TDD: write first, ensure FAIL before implementation)
 
-- [ ] T011 [US1] Write failing test config_rejects_zero (ProducerConfig::builder(0).build() returns Err(ProducerError::InvalidConfig)) in crates/producer/src/lib.rs
-- [ ] T012 [P] [US1] Write failing test batch_size_bounds (seed-fixed Producer with n1_max=10, generate 100 batches, assert all sizes in [1, 10]; also assert every value in [1, 10] appears at least once -- verifies no degenerate distribution) in crates/producer/src/lib.rs
-- [ ] T013 [P] [US1] Write failing test tx_fields_valid (generate one batch, assert id parses as UUID, amount in [0.01, 10_000.00], last_name non-empty) in crates/producer/src/lib.rs
-- [ ] T013b [P] [US1] Write failing test seeded_rng_deterministic (build two Producers with identical seed; call generate_batch on each; assert both batches have identical size and identical transaction field values) in crates/producer/src/lib.rs
+- [X] T011 [US1] Write failing test config_rejects_zero (ProducerConfig::builder(0).build() returns Err(ProducerError::InvalidConfig)) in crates/producer/src/lib.rs
+- [X] T012 [P] [US1] Write failing test batch_size_bounds (seed-fixed Producer with n1_max=10, generate 100 batches, assert all sizes in [1, 10]; also assert every value in [1, 10] appears at least once -- verifies no degenerate distribution) in crates/producer/src/lib.rs
+- [X] T013 [P] [US1] Write failing test tx_fields_valid (generate one batch, assert id parses as UUID, amount in [0.01, 10_000.00], last_name non-empty) in crates/producer/src/lib.rs
+- [X] T013b [P] [US1] Write failing test seeded_rng_deterministic (build two Producers with identical seed; call generate_batch on each; assert both batches have identical size and identical transaction field values) in crates/producer/src/lib.rs
 
 ### Implementation for User Story 1
 
-- [ ] T014 [US1] Implement ProducerError with thiserror::Error (#[derive(Debug)], InvalidConfig { reason: String }, Buffer { #[from] source: BufferError }) in crates/producer/src/lib.rs
-- [ ] T015 [US1] Implement ProducerConfigBuilder (fields: n1_max, speed1, iterations, seed) and ProducerConfig::builder(n1_max: usize) -> ProducerConfigBuilder with defaults (speed1 = 100ms, iterations = None, seed = None); build() validates n1_max >= 1 and returns Result<ProducerConfig, ProducerError> in crates/producer/src/lib.rs
-- [ ] T016 [US1] Implement Producer<B: Buffer1> with StdRng initialized from seed (StdRng::seed_from_u64) or StdRng::from_os_rng(), const LAST_NAMES: [&str; N] array, and generate_batch (rng.random_range(1..=n1_max) size, UUID via Builder::from_random_bytes + rng.fill_bytes, amount as rng.random_range(1..=1_000_000) as f64 / 100.0, random last_name index) in crates/producer/src/lib.rs
+- [X] T014 [US1] Implement ProducerError with thiserror::Error (#[derive(Debug)], InvalidConfig { reason: String }, Buffer { #[from] source: BufferError }) in crates/producer/src/lib.rs
+- [X] T015 [US1] Implement ProducerConfigBuilder (fields: n1_max, speed1, iterations, seed) and ProducerConfig::builder(n1_max: usize) -> ProducerConfigBuilder with defaults (speed1 = 100ms, iterations = None, seed = None); build() validates n1_max >= 1 and returns Result<ProducerConfig, ProducerError> in crates/producer/src/lib.rs
+- [X] T016 [US1] Implement Producer<B: Buffer1> with StdRng initialized from seed (StdRng::seed_from_u64) or StdRng::from_os_rng(), const LAST_NAMES: [&str; N] array, and generate_batch (rng.random_range(1..=n1_max) size, UUID via Builder::from_random_bytes + rng.fill_bytes, amount as rng.random_range(1..=1_000_000) as f64 / 100.0, random last_name index) in crates/producer/src/lib.rs
 
 **Checkpoint**: `cargo test -p producer` passes config_rejects_zero, batch_size_bounds, tx_fields_valid. US1 is fully testable in isolation.
 
@@ -76,15 +76,15 @@
 
 ### Tests for User Story 2 (TDD: write first, ensure FAIL before implementation)
 
-- [ ] T017 [US2] Write failing test produce_and_write (create InMemoryBuffer, build Producer with seed, call produce_once, assert buffer.transactions().len() == batch size) in crates/producer/src/lib.rs
-- [ ] T018 [P] [US2] Write failing test in_memory_buffer_stores_batch (construct 5 Transactions with known UUIDs, call write_batch, assert stored UUIDs match in order) in crates/fraud_detection/src/adapters/in_memory_buffer.rs
+- [X] T017 [US2] Write failing test produce_and_write (create InMemoryBuffer, build Producer with seed, call produce_once, assert buffer.transactions().len() == batch size) in crates/producer/src/lib.rs
+- [X] T018 [P] [US2] Write failing test in_memory_buffer_stores_batch (construct 5 Transactions with known UUIDs, call write_batch, assert stored UUIDs match in order) in crates/fraud_detection/src/adapters/in_memory_buffer.rs
 
 ### Implementation for User Story 2
 
-- [ ] T019 [US2] Create crates/fraud_detection/src/adapters/mod.rs with pub mod in_memory_buffer; in crates/fraud_detection/src/adapters/mod.rs
-- [ ] T020 [US2] Implement InMemoryBuffer struct (#[derive(Debug)]) with RefCell<Vec<Transaction>> inner field, transactions() -> Ref<Vec<Transaction>> accessor, and impl Buffer1 (write_batch extends inner vec; never returns Full or Closed for PoC) in crates/fraud_detection/src/adapters/in_memory_buffer.rs
-- [ ] T021 [US2] Implement Producer::produce_once(&self, buffer: &B) -> Result<(), ProducerError> (calls self.generate_batch() then buffer.write_batch(batch).await, mapping BufferError via From) in crates/producer/src/lib.rs
-- [ ] T022 [US2] Implement crates/fraud_detection/src/main.rs with #[tokio::main], env_logger::init(), ProducerConfig::builder(100).build()?, InMemoryBuffer::new(), Producer::new(config), producer.produce_once(&buffer).await?, log::info! with batch count in crates/fraud_detection/src/main.rs
+- [X] T019 [US2] Create crates/fraud_detection/src/adapters/mod.rs with pub mod in_memory_buffer; in crates/fraud_detection/src/adapters/mod.rs
+- [X] T020 [US2] Implement InMemoryBuffer struct (#[derive(Debug)]) with RefCell<Vec<Transaction>> inner field, transactions() -> Ref<Vec<Transaction>> accessor, and impl Buffer1 (write_batch extends inner vec; never returns Full or Closed for PoC) in crates/fraud_detection/src/adapters/in_memory_buffer.rs
+- [X] T021 [US2] Implement Producer::produce_once(&self, buffer: &B) -> Result<(), ProducerError> (calls self.generate_batch() then buffer.write_batch(batch).await, mapping BufferError via From) in crates/producer/src/lib.rs
+- [X] T022 [US2] Implement crates/fraud_detection/src/main.rs with #[tokio::main], env_logger::init(), ProducerConfig::builder(100).build()?, InMemoryBuffer::new(), Producer::new(config), producer.produce_once(&buffer).await?, log::info! with batch count in crates/fraud_detection/src/main.rs
 
 **Checkpoint**: `cargo test -p producer` passes produce_and_write; `cargo test -p fraud_detection` passes in_memory_buffer_stores_batch. `cargo run` produces a logged batch.
 
@@ -98,16 +98,16 @@
 
 ### Tests for User Story 3 (TDD: write first, ensure FAIL before implementation)
 
-- [ ] T023 [US3] Write failing test run_n_iterations (Producer::run with iterations=Some(5), speed1=0ms, InMemoryBuffer; assert 5 batches written and total tx count in expected bounds) in crates/producer/src/lib.rs
-- [ ] T024 [P] [US3] Write failing test run_stops_on_closed (buffer returns BufferError::Closed on first write; Producer::run returns Ok(())) in crates/producer/src/lib.rs
-- [ ] T025 [P] [US3] Write failing test run_propagates_full (buffer returns BufferError::Full on first write; Producer::run returns Err(ProducerError::Buffer { source: BufferError::Full { .. } })) in crates/producer/src/lib.rs
+- [X] T023 [US3] Write failing test run_n_iterations (Producer::run with iterations=Some(5), speed1=0ms, InMemoryBuffer; assert 5 batches written and total tx count in expected bounds) in crates/producer/src/lib.rs
+- [X] T024 [P] [US3] Write failing test run_stops_on_closed (buffer returns BufferError::Closed on first write; Producer::run returns Ok(())) in crates/producer/src/lib.rs
+- [X] T025 [P] [US3] Write failing test run_propagates_full (buffer returns BufferError::Full on first write; Producer::run returns Err(ProducerError::Buffer { source: BufferError::Full { .. } })) in crates/producer/src/lib.rs
 
 ### Implementation for User Story 3
 
-- [ ] T026 [US3] Implement Producer::run(&self, buffer: &B) -> Result<(), ProducerError> with loop: generate_batch, write via produce_once, match on ProducerError::Buffer { source: BufferError::Closed } -> break Ok(()), other errors -> return Err in crates/producer/src/lib.rs
-- [ ] T027 [US3] Add iterations handling to Producer::run: if config.iterations == Some(n) track count and break after n batches; if None loop indefinitely until Closed or error in crates/producer/src/lib.rs
-- [ ] T028 [US3] Add tokio::time::sleep(self.config.speed1) after each successful write in Producer::run in crates/producer/src/lib.rs
-- [ ] T029 [US3] Update crates/fraud_detection/src/main.rs to call producer.run(&buffer).await with anyhow::Context for error propagation; add RUST_LOG=info logging guidance comment in crates/fraud_detection/src/main.rs
+- [X] T026 [US3] Implement Producer::run(&self, buffer: &B) -> Result<(), ProducerError> with loop: generate_batch, write via produce_once, match on ProducerError::Buffer { source: BufferError::Closed } -> break Ok(()), other errors -> return Err in crates/producer/src/lib.rs
+- [X] T027 [US3] Add iterations handling to Producer::run: if config.iterations == Some(n) track count and break after n batches; if None loop indefinitely until Closed or error in crates/producer/src/lib.rs
+- [X] T028 [US3] Add tokio::time::sleep(self.config.speed1) after each successful write in Producer::run in crates/producer/src/lib.rs
+- [X] T029 [US3] Update crates/fraud_detection/src/main.rs to call producer.run(&buffer).await with anyhow::Context for error propagation; add RUST_LOG=info logging guidance comment in crates/fraud_detection/src/main.rs
 
 **Checkpoint**: `cargo test -p producer` passes run_n_iterations, run_stops_on_closed, run_propagates_full. Total: 7 producer tests green.
 
@@ -117,11 +117,11 @@
 
 **Purpose**: ms-rust compliance, lint gate, and final validation across all crates.
 
-- [ ] T030 [P] Apply ms-rust compliance across workspace: #[must_use] on ProducerConfig::builder and ProducerConfigBuilder::build; #[derive(Debug)] on all public types; replace any #[allow] with #[expect(..., reason = "...")] in crates/domain/src/lib.rs, crates/producer/src/lib.rs, crates/fraud_detection/src/adapters/in_memory_buffer.rs
-- [ ] T031 [P] Run cargo clippy --workspace -- -D warnings and fix all violations; add // Rust guideline compliant YYYY-MM-DD comment to each source file in all workspace crates
-- [ ] T032 Run cargo test --workspace and confirm all 12 tests pass (domain: 3, producer: 8, fraud_detection: 1)
-- [ ] T033 [P] Run cargo build --release and verify zero warnings
-- [ ] T034 Validate quickstart.md: run RUST_LOG=info cargo run and confirm log output shows iteration count and batch size; run RUST_LOG=debug cargo test and confirm per-transaction debug output in crates/fraud_detection/
+- [X] T030 [P] Apply ms-rust compliance across workspace: #[must_use] on ProducerConfig::builder and ProducerConfigBuilder::build; #[derive(Debug)] on all public types; replace any #[allow] with #[expect(..., reason = "...")] in crates/domain/src/lib.rs, crates/producer/src/lib.rs, crates/fraud_detection/src/adapters/in_memory_buffer.rs
+- [X] T031 [P] Run cargo clippy --workspace -- -D warnings and fix all violations; add // Rust guideline compliant YYYY-MM-DD comment to each source file in all workspace crates
+- [X] T032 Run cargo test --workspace and confirm all 12 tests pass (domain: 3, producer: 8, fraud_detection: 1)
+- [X] T033 [P] Run cargo build --release and verify zero warnings
+- [X] T034 Validate quickstart.md: run RUST_LOG=info cargo run and confirm log output shows iteration count and batch size; run RUST_LOG=debug cargo test and confirm per-transaction debug output in crates/fraud_detection/
 
 ---
 

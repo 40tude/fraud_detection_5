@@ -1,0 +1,15 @@
+[package]
+name    = "producer"
+version = "0.1.0"
+edition = "2024"
+
+[lints]
+workspace = true
+
+[dependencies]
+domain    = { path = "../domain" }
+uuid      = { workspace = true }
+rand      = { workspace = true }
+thiserror = { workspace = true }
+log       = { workspace = true }
+tokio     = { workspace = true }

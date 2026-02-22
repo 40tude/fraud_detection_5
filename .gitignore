@@ -1,5 +1,17 @@
 target/
 temp/
 docs/
-.env
+.env*
 .claude/settings.local.json
+# Rust
+*.rs.bk
+*.rlib
+*.prof*
+# Editors
+.idea/
+.vscode/
+*.swp
+*.tmp
+# OS
+.DS_Store
+Thumbs.db
