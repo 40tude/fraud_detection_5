@@ -5,6 +5,13 @@
 **Status**: Draft
 **Input**: User description: "Consumer extracts from Buffer1 batches of transactions at speed2. Batches are of size N2 which vary at each iteration [1, N2_MAX]. Consumer sends each batch to Modelizer (implementation unknown). When batch returned from Modelizer, Consumer generates alarm for every transaction marked as fraudulent (alarm implementation unknown). Consumer then writes processed batch into Buffer2 (implementation unknown). At any time, Consumer can switch model version (N or N-1) used by Modelizer."
 
+## Clarifications
+
+### Session 2026-02-22
+
+- Q: When an alarm fails for one fraudulent transaction, should remaining alarms be skipped and Buffer2 write aborted? -> A: Best-effort alarms -- attempt all alarms, collect failures, then always write batch to Buffer2.
+- Q: How is the model version switch triggered? -> A: Consumer asks the Modelizer to switch via the Modelizer port. The Modelizer owns its version state; the Consumer issues a switch command through the existing hexagonal port.
+
 ## User Scenarios & Testing
 
 ### User Story 1 - Read Batches from Buffer1 (Priority: P1)
@@ -51,7 +58,7 @@ After receiving inferred transactions from the Modelizer, the Consumer inspects 
 
 1. **Given** a batch of 10 inferred transactions where 3 are marked fraudulent, **When** Consumer processes alarms, **Then** exactly 3 alarms are triggered.
 2. **Given** a batch where no transactions are fraudulent, **When** Consumer processes alarms, **Then** no alarms are triggered.
-3. **Given** the alarm port fails, **When** Consumer triggers an alarm, **Then** the error propagates to the caller.
+3. **Given** the alarm port fails for 1 of 3 fraudulent transactions, **When** Consumer processes alarms, **Then** all 3 alarms are attempted, failures are collected, and the batch is still written to Buffer2.
 
 ---
 
@@ -73,7 +80,7 @@ After inference and alarm processing, the Consumer writes the entire processed b
 
 ### User Story 5 - Switch Model Version at Runtime (Priority: P2)
 
-The Consumer can switch the Modelizer between model version N (latest) and N-1 (previous) at any time. The switch takes effect on the next batch sent to the Modelizer. The default model version is the latest (N).
+The Consumer can ask the Modelizer to switch between model version N (latest) and N-1 (previous) at any time via the Modelizer port. The Modelizer owns its version state; the Consumer issues a switch command. The switch takes effect on the next batch sent to the Modelizer. The default model version is the latest (N).
 
 **Why this priority**: Version switching enables A/B comparison and rollback, but the pipeline functions correctly with a single version.
 
@@ -81,9 +88,9 @@ The Consumer can switch the Modelizer between model version N (latest) and N-1 (
 
 **Acceptance Scenarios**:
 
-1. **Given** Consumer is using model version N, **When** a switch to N-1 is requested, **Then** the next batch sent to Modelizer uses version N-1.
-2. **Given** Consumer is using model version N-1, **When** a switch to N is requested, **Then** the next batch sent to Modelizer uses version N.
-3. **Given** no version switch has been requested, **When** Consumer starts, **Then** model version N (latest) is used by default.
+1. **Given** Consumer is using model version N, **When** Consumer asks Modelizer to switch to N-1, **Then** the next batch inferred by the Modelizer uses version N-1.
+2. **Given** Consumer is using model version N-1, **When** Consumer asks Modelizer to switch to N, **Then** the next batch inferred by the Modelizer uses version N.
+3. **Given** no version switch has been requested, **When** Consumer starts, **Then** Modelizer uses model version N (latest) by default.
 
 ---
 
@@ -98,7 +105,7 @@ The Consumer can switch the Modelizer between model version N (latest) and N-1 (
 - What happens when N2_MAX is 1?
   - Consumer reads exactly 1 transaction per iteration (valid configuration).
 - What happens when alarm generation fails for one transaction in a batch?
-  - The error propagates; remaining alarms for that batch may not fire.
+  - Best-effort: Consumer attempts all alarms in the batch, collects failures, then writes the batch to Buffer2 regardless. Alarm failures are reported to the caller after the batch completes.
 
 ## Requirements
 
@@ -109,14 +116,14 @@ The Consumer can switch the Modelizer between model version N (latest) and N-1 (
 - **FR-003**: Consumer MUST accept N2_MAX as configuration (minimum value: 1).
 - **FR-004**: Consumer MUST send each read batch to the Modelizer through a hexagonal port (inference trait).
 - **FR-005**: Consumer MUST receive inferred transactions from the Modelizer, each enriched with `predicted_fraud`, `model_name`, and `model_version`.
-- **FR-006**: Consumer MUST generate one alarm per fraudulent transaction through a hexagonal port (alarm trait).
-- **FR-007**: Consumer MUST write each fully-processed batch to Buffer2 through a hexagonal port (write trait).
-- **FR-008**: Consumer MUST support switching the Modelizer version between N and N-1 at runtime.
-- **FR-009**: Consumer MUST default to model version N (latest) at startup.
-- **FR-010**: A model version switch MUST take effect on the next batch, not the current in-flight batch.
+- **FR-006**: Consumer MUST attempt one alarm per fraudulent transaction through a hexagonal port (alarm trait), using best-effort delivery (all alarms attempted even if some fail).
+- **FR-007**: Consumer MUST write each fully-processed batch to Buffer2 through a hexagonal port (write trait), regardless of alarm failures.
+- **FR-008**: Consumer MUST ask the Modelizer to switch version between N and N-1 at runtime, through the Modelizer hexagonal port. The Modelizer owns its version state.
+- **FR-009**: Modelizer MUST default to model version N (latest) at startup.
+- **FR-010**: A model version switch issued by the Consumer MUST take effect on the next batch inferred by the Modelizer, not the current in-flight batch.
 - **FR-011**: Consumer MUST operate at speed2, defined as a configurable delay between processing iterations.
 - **FR-012**: Consumer MUST stop gracefully when Buffer1 is closed and fully drained.
-- **FR-013**: Consumer MUST propagate errors from Buffer1, Modelizer, Buffer2, and Alarm ports to the caller.
+- **FR-013**: Consumer MUST propagate errors from Buffer1, Modelizer, and Buffer2 ports to the caller immediately. Alarm errors MUST be collected across the batch and reported after Buffer2 write completes.
 
 ### Key Entities
 
@@ -125,7 +132,7 @@ The Consumer can switch the Modelizer between model version N (latest) and N-1 (
 - **ConsumerConfig**: Configuration for the Consumer. Contains N2_MAX (maximum batch size) and speed2 (delay between iterations), plus optional iteration limit.
 - **Buffer1 (read side)**: Hexagonal port for reading batches of transactions from the first buffer.
 - **Buffer2 (write side)**: Hexagonal port for writing batches of inferred transactions to the second buffer.
-- **Modelizer**: Hexagonal port for sending a batch of transactions with a version selection and receiving inferred transactions.
+- **Modelizer**: Hexagonal port for sending a batch of transactions and receiving inferred transactions. Also exposes a version-switch command; the Modelizer owns its version state internally.
 - **Alarm**: Hexagonal port for triggering a fraud alert on a single inferred transaction.
 
 ## Success Criteria
@@ -135,7 +142,7 @@ The Consumer can switch the Modelizer between model version N (latest) and N-1 (
 - **SC-001**: Consumer processes batches with variable sizes correctly verified by the full range [1, N2_MAX] being exercised over multiple iterations.
 - **SC-002**: 100% of fraudulent transactions in a batch trigger exactly one alarm each; 0% of legitimate transactions trigger alarms.
 - **SC-003**: All inferred transactions (both fraudulent and legitimate) are written to Buffer2 after processing.
-- **SC-004**: Model version switch takes effect within one iteration boundary -- never mid-batch.
+- **SC-004**: Model version switch issued by Consumer to Modelizer takes effect within one iteration boundary -- never mid-batch.
 - **SC-005**: Consumer stops within one iteration after Buffer1 signals closed and is drained.
 - **SC-006**: All four hexagonal ports (Buffer1-read, Modelizer, Alarm, Buffer2-write) are swappable without modifying Consumer domain logic.
 
@@ -145,5 +152,6 @@ The Consumer can switch the Modelizer between model version N (latest) and N-1 (
 - **"At any time"** for model version switching means between iterations, not mid-batch. The switch method can be called at any point, but it only affects the next iteration.
 - **Buffer1 read port** is a new trait separate from the existing `Buffer1` write trait. The read side returns batches of up to N requested transactions.
 - **InferredTransaction** is a new domain type distinct from `Transaction`, defined in the domain crate.
-- **Alarm port** receives one inferred transaction at a time (per-transaction granularity), not a batch.
-- **Error handling**: Errors from any port propagate immediately; no retry logic in the Consumer (retry policies belong to adapters or orchestration, not domain logic).
+- **Alarm port** receives one inferred transaction at a time (per-transaction granularity), not a batch. Alarm delivery is best-effort: all alarms in a batch are attempted, failures are collected, and the batch is written to Buffer2 regardless.
+- **Error handling**: Buffer1, Modelizer, and Buffer2 errors propagate immediately. Alarm errors are collected (best-effort) and reported after Buffer2 write. No retry logic in the Consumer.
+- **Model version state** is owned by the Modelizer, not the Consumer. The Consumer issues switch commands through the Modelizer port.

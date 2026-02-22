@@ -31,6 +31,8 @@
 
 ## Notes
 
-- All items pass. Spec is ready for `/speckit.clarify` or `/speckit.plan`.
-- Assumptions section documents 6 informed defaults (speed2 pattern, version switch timing, Buffer1 read trait, InferredTransaction type, Alarm granularity, error propagation).
-- No [NEEDS CLARIFICATION] markers -- all ambiguities resolved with reasonable defaults grounded in constitution and Producer feature precedent.
+- All items pass. Spec is ready for `/speckit.plan`.
+- Clarification session 2026-02-22: 2 questions asked and answered.
+  - Q1: Alarm failure policy -> Best-effort alarms, Buffer2 write always proceeds.
+  - Q2: Model version switch trigger -> Consumer delegates to Modelizer port; Modelizer owns version state.
+- Assumptions section documents 7 informed defaults (speed2 pattern, version switch timing, Buffer1 read trait, InferredTransaction type, Alarm granularity, error propagation, model version ownership).
