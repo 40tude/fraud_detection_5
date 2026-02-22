@@ -156,7 +156,7 @@ MockModelizer.last_version == NMinus1.
 
 ### Tests for User Story 5
 
-- [ ] T030 [US5] Write failing tests for model version switch (switch_to_n_minus1_calls_modelizer_switch_version, switch_to_n_calls_modelizer_switch_version, switch_error_maps_to_consumer_error_inference) using MockModelizer in `crates/consumer/src/lib.rs`
+- [ ] T030 [US5] Write failing tests for model version switch (switch_to_n_minus1_calls_modelizer_switch_version, switch_to_n_calls_modelizer_switch_version, switch_error_maps_to_consumer_error_inference, default_model_version_is_n -- verify MockModelizer starts with version N and infer is called with no prior switch_version call) using MockModelizer in `crates/consumer/src/lib.rs`
 
 ### Implementation for User Story 5
 
@@ -176,11 +176,11 @@ MockModelizer.last_version == NMinus1.
 
 - [ ] T032 [P] Update `InMemoryBuffer` to implement `Buffer1Read` (add `async fn read_batch(&self, max: usize) -> Result<Vec<Transaction>, BufferError>` draining up to max items; return Err(BufferError::Closed) when closed and empty) in `crates/fraud_detection/src/adapters/in_memory_buffer.rs`
 - [ ] T033 [P] Create `InMemoryBuffer2` struct implementing `Buffer2` trait (wraps `RefCell<VecDeque<InferredTransaction>>`; write_batch appends all; returns BufferError::Full when over capacity; #[must_use] new) in `crates/fraud_detection/src/adapters/in_memory_buffer2.rs`
-- [ ] T034 [P] Create `MockModelizer` struct implementing `Modelizer` trait (marks all transactions fraudulent or legitimate per config bool; populates model_name="DINN", model_version="v1"; logs infer and switch_version calls) in `crates/fraud_detection/src/adapters/mock_modelizer.rs`
+- [ ] T034 [P] Create `DemoModelizer` struct implementing `Modelizer` trait (marks all transactions fraudulent or legitimate per config bool; populates model_name="DINN", model_version="v1"; initializes current_version=ModelVersion::N (FR-009); logs infer and switch_version calls) in `crates/fraud_detection/src/adapters/demo_modelizer.rs`
 - [ ] T035 [P] Create `LogAlarm` struct implementing `Alarm` trait (logs fraud alert via `log::warn!` with transaction id; returns Ok(()); #[must_use] new) in `crates/fraud_detection/src/adapters/log_alarm.rs`
-- [ ] T036 Update `crates/fraud_detection/src/adapters/mod.rs` to declare `in_memory_buffer2`, `mock_modelizer`, and `log_alarm` submodules (pub use types)
+- [ ] T036 Update `crates/fraud_detection/src/adapters/mod.rs` to declare `in_memory_buffer2`, `demo_modelizer`, and `log_alarm` submodules (pub use types)
 - [ ] T037 [P] Add `consumer` workspace dependency to `crates/fraud_detection/Cargo.toml`
-- [ ] T038 Update `crates/fraud_detection/src/main.rs` to construct `ConsumerConfig`, `Consumer`, and call `consumer.run` with `&in_memory_buffer` (Buffer1Read), `&mock_modelizer`, `&log_alarm`, `&in_memory_buffer2`; log alarm failures from Ok(vec)
+- [ ] T038 Update `crates/fraud_detection/src/main.rs` to construct `ConsumerConfig`, `Consumer`, and call `consumer.run` with `&in_memory_buffer` (Buffer1Read), `&demo_modelizer`, `&log_alarm`, `&in_memory_buffer2`; `run` returns `Result<(), ConsumerError>` -- alarm errors are logged inside `run` per-iteration when `consume_once` returns `Ok(alarm_errors)` with non-empty vec; `main.rs` only handles the outer `Result`
 
 **Checkpoint**: `cargo build --release` succeeds; full pipeline runs end-to-end
 

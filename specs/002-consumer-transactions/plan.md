@@ -72,7 +72,7 @@ crates/
         |   +-- mod.rs                  # ADD: new adapter modules
         |   +-- in_memory_buffer.rs     # UPDATE: implement Buffer1Read
         |   +-- in_memory_buffer2.rs    # NEW: Buffer2 adapter
-        |   +-- mock_modelizer.rs       # NEW: Modelizer adapter (demo)
+        |   +-- demo_modelizer.rs       # NEW: Modelizer adapter (demo, DemoModelizer)
         |   +-- log_alarm.rs           # NEW: Alarm adapter (log-based)
         +-- main.rs                     # UPDATE: wire Consumer
 ```
