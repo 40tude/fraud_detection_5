@@ -54,8 +54,9 @@
 ### Tests for User Story 1 (TDD: write first, ensure FAIL before implementation)
 
 - [ ] T011 [US1] Write failing test config_rejects_zero (ProducerConfig::builder(0).build() returns Err(ProducerError::InvalidConfig)) in crates/producer/src/lib.rs
-- [ ] T012 [P] [US1] Write failing test batch_size_bounds (seed-fixed Producer with n1_max=10, generate 100 batches, assert all sizes in [1, 10]) in crates/producer/src/lib.rs
+- [ ] T012 [P] [US1] Write failing test batch_size_bounds (seed-fixed Producer with n1_max=10, generate 100 batches, assert all sizes in [1, 10]; also assert every value in [1, 10] appears at least once -- verifies no degenerate distribution) in crates/producer/src/lib.rs
 - [ ] T013 [P] [US1] Write failing test tx_fields_valid (generate one batch, assert id parses as UUID, amount in [0.01, 10_000.00], last_name non-empty) in crates/producer/src/lib.rs
+- [ ] T013b [P] [US1] Write failing test seeded_rng_deterministic (build two Producers with identical seed; call generate_batch on each; assert both batches have identical size and identical transaction field values) in crates/producer/src/lib.rs
 
 ### Implementation for User Story 1
 
@@ -118,7 +119,7 @@
 
 - [ ] T030 [P] Apply ms-rust compliance across workspace: #[must_use] on ProducerConfig::builder and ProducerConfigBuilder::build; #[derive(Debug)] on all public types; replace any #[allow] with #[expect(..., reason = "...")] in crates/domain/src/lib.rs, crates/producer/src/lib.rs, crates/fraud_detection/src/adapters/in_memory_buffer.rs
 - [ ] T031 [P] Run cargo clippy --workspace -- -D warnings and fix all violations; add // Rust guideline compliant YYYY-MM-DD comment to each source file in all workspace crates
-- [ ] T032 Run cargo test --workspace and confirm all 11 tests pass (domain: 3, producer: 7, fraud_detection: 1)
+- [ ] T032 Run cargo test --workspace and confirm all 12 tests pass (domain: 3, producer: 8, fraud_detection: 1)
 - [ ] T033 [P] Run cargo build --release and verify zero warnings
 - [ ] T034 Validate quickstart.md: run RUST_LOG=info cargo run and confirm log output shows iteration count and batch size; run RUST_LOG=debug cargo test and confirm per-transaction debug output in crates/fraud_detection/
 

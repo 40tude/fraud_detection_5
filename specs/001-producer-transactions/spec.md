@@ -85,9 +85,9 @@ cleanly.
 1. **Given** a Producer configured with N1_MAX = 20 and 5 iterations,
    **When** the Producer runs, **Then** 5 batches are written to the
    buffer, each containing between 1 and 20 transactions.
-2. **Given** a running Producer, **When** a stop signal is sent,
-   **Then** the Producer completes its current batch and stops without
-   data loss.
+2. **Given** a running Producer, **When** the buffer returns
+   `BufferError::Closed`, **Then** the Producer exits its loop and
+   returns `Ok(())` with no data loss.
 
 ---
 
@@ -152,8 +152,8 @@ cleanly.
 ### Measurable Outcomes
 
 - **SC-001**: Producer generates valid transaction batches with 100% of
-  transactions passing schema validation (UUID format, non-negative
-  amount, non-empty last_name).
+  transactions passing schema validation (UUID format, amount in
+  [0.01, 10,000.00] with 2 decimal places, non-empty last_name).
 - **SC-002**: Batch sizes are uniformly distributed across [1, N1_MAX]
   over a statistically significant number of iterations (>= 100).
 - **SC-003**: Swapping the Buffer1 adapter (e.g., from Vec-based to
