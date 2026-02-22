@@ -10,14 +10,37 @@
 ## Build and Run
 
 ```bash
+cargo build
+$env:RUST_LOG='info'; cargo run; Remove-Item env:RUST_LOG
+
 cargo build --release
 cargo run
+```
+
+Expected output:
+
+```text
+$env:RUST_LOG='info'; cargo run; Remove-Item env:RUST_LOG
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.05s
+     Running `C:/Users/phili/rust_builds/Documents/Programmation/rust/13_fraud_detection_5\debug\fraud_detection.exe`
+[2026-02-22T11:52:05Z INFO  producer] producer.batch.written: iteration=1
+[2026-02-22T11:52:05Z INFO  producer] producer.batch.written: iteration=2
+[2026-02-22T11:52:06Z INFO  producer] producer.batch.written: iteration=3
+[2026-02-22T11:52:06Z INFO  producer] producer.batch.written: iteration=4
+[2026-02-22T11:52:06Z INFO  producer] producer.batch.written: iteration=5
+[2026-02-22T11:52:06Z INFO  producer] producer.batch.written: iteration=6
+[2026-02-22T11:52:06Z INFO  producer] producer.batch.written: iteration=7
+[2026-02-22T11:52:06Z INFO  producer] producer.batch.written: iteration=8
+[2026-02-22T11:52:06Z INFO  producer] producer.batch.written: iteration=9
+[2026-02-22T11:52:06Z INFO  producer] producer.batch.written: iteration=10
+[2026-02-22T11:52:06Z INFO  fraud_detection] producer.run.complete: total_transactions=423
 ```
 
 ## Run Tests
 
 ```bash
 cargo test --workspace
+
 ```
 
 ## Set Log Level
