@@ -7,7 +7,9 @@
 //! logic.
 
 pub mod concurrent_buffer;
+pub mod concurrent_buffer2;
 pub mod demo_model;
 pub mod in_memory_buffer;
 pub mod in_memory_buffer2;
+pub mod in_memory_storage;
 pub mod log_alarm;

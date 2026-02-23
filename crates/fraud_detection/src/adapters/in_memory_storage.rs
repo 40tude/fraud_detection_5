@@ -1,0 +1,120 @@
+// Rust guideline compliant 2026-02-23
+
+//! In-memory adapter for the `Storage` port.
+//!
+//! Intended for proof-of-concept runs and unit tests only.
+//! Returns `StorageError::CapacityExceeded` when the configured capacity is exceeded.
+//! `StorageError::Unavailable` is part of the Storage trait contract but is never
+//! returned by this adapter; it is reserved for future concrete backends.
+
+use std::cell::RefCell;
+
+use domain::{PendingTransaction, Storage, StorageError};
+
+/// `Storage` adapter backed by an in-memory `Vec<PendingTransaction>`.
+///
+/// Pending transactions written via [`Storage::write_batch`] are appended to
+/// an internal vector. Returns [`StorageError::CapacityExceeded`] when
+/// `current_count + batch_size` exceeds `capacity`.
+#[derive(Debug)]
+pub struct InMemoryStorage {
+    inner: RefCell<Vec<PendingTransaction>>,
+    /// Maximum number of pending transactions the storage can hold.
+    capacity: usize,
+}
+
+impl InMemoryStorage {
+    /// Create an empty storage with the given `capacity`.
+    #[must_use]
+    pub fn new(capacity: usize) -> Self {
+        Self { inner: RefCell::new(vec![]), capacity }
+    }
+
+    /// Return the number of stored items.
+    ///
+    /// Used in tests to assert persistence counts.
+    #[cfg(test)]
+    #[must_use]
+    pub fn len(&self) -> usize {
+        self.inner.borrow().len()
+    }
+}
+
+impl Storage for InMemoryStorage {
+    /// Append `batch` to the internal store.
+    ///
+    /// # Errors
+    ///
+    /// Returns `StorageError::CapacityExceeded` when `current_count + batch.len()`
+    /// exceeds the configured capacity.
+    async fn write_batch(&self, batch: Vec<PendingTransaction>) -> Result<(), StorageError> {
+        let inner = self.inner.borrow();
+        if inner.len() + batch.len() > self.capacity {
+            return Err(StorageError::CapacityExceeded { capacity: self.capacity });
+        }
+        drop(inner);
+        self.inner.borrow_mut().extend(batch);
+        Ok(())
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
+
+#[cfg(test)]
+mod tests {
+    use super::InMemoryStorage;
+    use domain::{
+        InferredTransaction, PendingTransaction, Storage as _, StorageError, Transaction,
+    };
+    use uuid::Uuid;
+
+    fn make_pending() -> PendingTransaction {
+        PendingTransaction {
+            inferred_transaction: InferredTransaction {
+                transaction: Transaction {
+                    id: Uuid::new_v4(),
+                    amount: 1.00_f64,
+                    last_name: "Test".to_owned(),
+                },
+                predicted_fraud: false,
+                model_name: "DEMO".to_owned(),
+                model_version: "4".to_owned(),
+            },
+            prediction_confirmed: false,
+        }
+    }
+
+    fn make_batch(n: usize) -> Vec<PendingTransaction> {
+        (0..n).map(|_| make_pending()).collect()
+    }
+
+    // IMS-T01: write_batch stores all items.
+    #[tokio::test]
+    async fn write_batch_stores_all_items() {
+        let storage = InMemoryStorage::new(100);
+        storage.write_batch(make_batch(5)).await.unwrap();
+        assert_eq!(storage.len(), 5);
+    }
+
+    // IMS-T02: CapacityExceeded returned with correct capacity when full.
+    #[tokio::test]
+    async fn capacity_exceeded_correct_value() {
+        let storage = InMemoryStorage::new(3);
+        let result = storage.write_batch(make_batch(4)).await;
+        assert!(
+            matches!(result, Err(StorageError::CapacityExceeded { capacity: 3 })),
+            "expected CapacityExceeded(3), got {result:?}"
+        );
+    }
+
+    // IMS-T03: multiple batches accumulate.
+    #[tokio::test]
+    async fn multiple_batches_accumulate() {
+        let storage = InMemoryStorage::new(100);
+        storage.write_batch(make_batch(3)).await.unwrap();
+        storage.write_batch(make_batch(4)).await.unwrap();
+        assert_eq!(storage.len(), 7);
+    }
+}

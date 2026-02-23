@@ -2,8 +2,8 @@
 
 //! Shared domain types for the fraud-detection pipeline.
 //!
-//! Defines `Transaction`, `BufferError`, and the hexagonal port traits:
-//! `Buffer1`, `Buffer1Read`, `Buffer2`, `Model`, `Modelizer`, and `Alarm`.
+//! Defines `Transaction`, `BufferError`, `StorageError`, and the hexagonal port traits:
+//! `Buffer1`, `Buffer1Read`, `Buffer2`, `Buffer2Read`, `Storage`, `Model`, `Modelizer`, and `Alarm`.
 //! All pipeline components depend on this crate; no other crate is imported here.
 
 /// A single banking transaction produced by the pipeline.
@@ -36,6 +36,37 @@ impl InferredTransaction {
     pub fn id(&self) -> uuid::Uuid {
         self.transaction.id
     }
+}
+
+/// A transaction awaiting full verification, wrapping an inferred result.
+#[derive(Debug, Clone, PartialEq)]
+pub struct PendingTransaction {
+    /// Original inferred transaction (composition).
+    pub inferred_transaction: InferredTransaction,
+    /// Whether the fraud prediction has been fully verified.
+    pub prediction_confirmed: bool,
+}
+
+impl PendingTransaction {
+    /// Return the transaction ID, delegating through the inferred transaction.
+    #[must_use]
+    pub fn id(&self) -> uuid::Uuid {
+        self.inferred_transaction.id()
+    }
+}
+
+/// Errors that a storage implementation may return.
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
+pub enum StorageError {
+    /// Storage has reached its maximum item capacity.
+    #[error("storage capacity exceeded (capacity: {capacity})")]
+    CapacityExceeded {
+        /// Maximum number of items the storage can hold.
+        capacity: usize,
+    },
+    /// Storage backend is unreachable or otherwise unavailable.
+    #[error("storage unavailable")]
+    Unavailable,
 }
 
 /// Selectable model version for Modelizer switch commands.
@@ -139,6 +170,42 @@ pub trait Buffer2 {
     /// Returns `BufferError::Full` when capacity is exceeded, or
     /// `BufferError::Closed` when the buffer has been shut down.
     async fn write_batch(&self, batch: Vec<InferredTransaction>) -> Result<(), BufferError>;
+}
+
+/// Hexagonal port: the read side of the second inter-component buffer.
+///
+/// Logger depends exclusively on this trait -- never on a concrete adapter.
+/// Implementations signal exhaustion via `BufferError::Closed`.
+#[expect(
+    async_fn_in_trait,
+    reason = "no dyn dispatch needed; internal workspace only"
+)]
+pub trait Buffer2Read {
+    /// Read up to `max` inferred transactions from the buffer.
+    ///
+    /// Returns between 1 and `max` items when data is available.
+    ///
+    /// # Errors
+    ///
+    /// Returns `BufferError::Closed` when the buffer is closed and drained.
+    async fn read_batch(&self, max: usize) -> Result<Vec<InferredTransaction>, BufferError>;
+}
+
+/// Hexagonal port: persistent storage for pending transactions.
+///
+/// Logger depends exclusively on this trait -- never on a concrete adapter.
+#[expect(
+    async_fn_in_trait,
+    reason = "no dyn dispatch needed; internal workspace only"
+)]
+pub trait Storage {
+    /// Persist a batch of pending transactions.
+    ///
+    /// # Errors
+    ///
+    /// Returns `StorageError::CapacityExceeded` when the store is full, or
+    /// `StorageError::Unavailable` when the backend cannot be reached.
+    async fn write_batch(&self, batch: Vec<PendingTransaction>) -> Result<(), StorageError>;
 }
 
 /// Hexagonal port: per-transaction classification model.
@@ -360,6 +427,71 @@ mod tests {
         assert_eq!(m.name(), "minimal");
         assert_eq!(m.active_version(), "0");
         m.switch_version(ModelVersion::N).await.unwrap();
+    }
+
+    // ------------------------------------------------------------------
+    // T009: PendingTransaction tests
+    // ------------------------------------------------------------------
+
+    #[test]
+    fn pending_transaction_fields() {
+        let id = uuid::Uuid::new_v4();
+        let tx = Transaction { id, amount: 10.00_f64, last_name: "Durand".to_owned() };
+        let inferred = InferredTransaction {
+            transaction: tx,
+            predicted_fraud: true,
+            model_name: "DEMO".to_owned(),
+            model_version: "4".to_owned(),
+        };
+        let pending = PendingTransaction {
+            inferred_transaction: inferred.clone(),
+            prediction_confirmed: false,
+        };
+        // id() delegates through inferred_transaction.id().
+        assert_eq!(pending.id(), id);
+        assert!(!pending.prediction_confirmed);
+        assert_eq!(pending.inferred_transaction, inferred);
+    }
+
+    #[test]
+    fn pending_transaction_clone_and_eq() {
+        let id = uuid::Uuid::new_v4();
+        let tx = Transaction { id, amount: 1.00_f64, last_name: "A".to_owned() };
+        let inferred = InferredTransaction {
+            transaction: tx,
+            predicted_fraud: false,
+            model_name: "M".to_owned(),
+            model_version: "1".to_owned(),
+        };
+        let p1 = PendingTransaction { inferred_transaction: inferred, prediction_confirmed: false };
+        let p2 = p1.clone();
+        assert_eq!(p1, p2);
+    }
+
+    // ------------------------------------------------------------------
+    // T010: StorageError tests
+    // ------------------------------------------------------------------
+
+    #[test]
+    fn storage_error_capacity_exceeded() {
+        let e = StorageError::CapacityExceeded { capacity: 42 };
+        assert_eq!(e, StorageError::CapacityExceeded { capacity: 42 });
+        assert!(e.to_string().contains("42"));
+    }
+
+    #[test]
+    fn storage_error_unavailable() {
+        let e = StorageError::Unavailable;
+        assert_eq!(e, StorageError::Unavailable);
+        assert!(!e.to_string().is_empty());
+    }
+
+    #[test]
+    fn storage_error_variants_differ() {
+        assert_ne!(
+            StorageError::CapacityExceeded { capacity: 0 },
+            StorageError::Unavailable
+        );
     }
 
     /// Verify that all four new AFIT port traits compile with a minimal implementation.
