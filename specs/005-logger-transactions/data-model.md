@@ -26,7 +26,7 @@ PendingTransaction
   |     |     +-- last_name: String
   |     +-- predicted_fraud: bool
   |     +-- model_name: String
-  |     +-- model_version: String
+  |     +-- model_version: ModelVersion
   +-- prediction_confirmed: bool
 ```
 
