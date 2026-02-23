@@ -28,6 +28,30 @@
     - Pipeline table: Modelizer row field names model/version -> model_name/model_version
   Templates requiring updates: None (patch-level only)
   Follow-up TODOs: None
+
+  Version change: 1.0.1 -> 1.1.0 (minor: added Principle VI, 2026-02-23)
+  Added sections:
+    - VI. Concurrent Component Lifecycle
+  Modified sections:
+    - Governance: compliance line updated I-V -> I-VI
+  Templates requiring updates:
+    - .specify/templates/plan-template.md: OK (Constitution Check section is generic)
+    - .specify/templates/spec-template.md: OK (no principle-driven mandatory sections added)
+    - .specify/templates/tasks-template.md: OK (phase structure compatible)
+    - .specify/templates/checklist-template.md: OK (generic)
+    - .specify/templates/agent-file-template.md: OK (generic)
+  Follow-up TODOs: None
+
+  Version change: 1.1.0 -> 1.2.0 (minor: technology conventions in Principle II, 2026-02-23)
+  Modified sections:
+    - II. Modular Monolith: added error-handling and logging crate conventions
+  Templates requiring updates:
+    - .specify/templates/plan-template.md: OK (Constitution Check section is generic)
+    - .specify/templates/spec-template.md: OK
+    - .specify/templates/tasks-template.md: OK
+    - .specify/templates/checklist-template.md: OK
+    - .specify/templates/agent-file-template.md: OK
+  Follow-up TODOs: None
 -->
 
 # Fraud Detection Pipeline Constitution
@@ -58,6 +82,13 @@ separate library crate. A single binary crate orchestrates them.
   in the domain crate, never through concrete adapter crates.
 - External services (databases, message brokers) are out of scope for
   v1; all adapters are in-process.
+- **Error handling**: library crates (components, domain) MUST use
+  `thiserror` for typed, structured errors. The binary crate MUST use
+  `anyhow` for ergonomic error propagation in `main`.
+- **Logging**: library crates MUST use the `log` facade crate
+  (`log::info!`, `log::debug!`, etc.) and MUST NOT initialize a logger.
+  The binary crate initializes `env_logger` once at startup before
+  launching pipeline components.
 
 ### III. Test-Driven Development (NON-NEGOTIABLE)
 
@@ -95,6 +126,25 @@ asynchronous. Each stage operates at its own speed.
   and persists to Storage.
 - Batch sizes vary per iteration; components MUST handle variable-size
   input gracefully.
+
+### VI. Concurrent Component Lifecycle
+
+All pipeline components (Producer, Consumer, Logger) MUST run
+concurrently as cooperative async tasks. No component may block
+another from making progress.
+
+- The binary crate MUST launch all components via `tokio::join!` on a
+  single-thread Tokio runtime (`current_thread` flavor).
+- Each component MUST run indefinitely (`iterations = None`) by default.
+- Graceful shutdown MUST be supported via two mechanisms:
+  1. Buffer closure: receiving `BufferError::Closed` on a read or write
+     attempt is a normal stop signal; the component MUST return `Ok(())`.
+  2. CTRL+C: the binary crate MUST handle `tokio::signal::ctrl_c()` and
+     propagate shutdown to all components by closing the upstream buffer.
+- `RefCell`-based adapters are valid under this principle because
+  `tokio::join!` polls all futures on a single OS thread; no `Sync`
+  bound is required on buffers or storage.
+- `tokio::spawn` and multi-thread runtimes are out of scope for v1.
 
 ## Architectural Constraints
 
@@ -147,8 +197,8 @@ After inference it additionally carries: `predicted_fraud` (T|F), `model_name` a
   - MAJOR: Principle removal or backward-incompatible redefinition.
   - MINOR: New principle or materially expanded guidance.
   - PATCH: Clarifications, wording, or non-semantic refinements.
-- All code reviews MUST verify compliance with principles I-V.
+- All code reviews MUST verify compliance with principles I-VI.
 - Complexity MUST be justified; if a simpler alternative exists and
   meets the pedagogical goal, use it.
 
-**Version**: 1.0.1 | **Ratified**: 2026-02-21 | **Last Amended**: 2026-02-23
+**Version**: 1.2.0 | **Ratified**: 2026-02-21 | **Last Amended**: 2026-02-23
