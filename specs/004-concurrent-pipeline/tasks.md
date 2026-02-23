@@ -21,7 +21,7 @@ are written before implementation (Red-Green-Refactor). Test tasks are included 
 
 **Purpose**: Add the tokio `signal` feature required for FR-004 (`tokio::signal::ctrl_c`).
 
-- [ ] T001 Add `"signal"` to workspace tokio features in `Cargo.toml`
+- [X] T001 Add `"signal"` to workspace tokio features in `Cargo.toml`
 
 ---
 
@@ -32,11 +32,11 @@ user stories depend on it. TDD order: write tests first (Red), then implement (G
 
 **WARNING**: No user story work begins until this phase is complete.
 
-- [ ] T002 Write ConcurrentBuffer test module (CB-T01 to CB-T06: write/read roundtrip, empty+closed error, write-to-closed error, drain from front, idempotent close, yield-unblocks scenario) in `crates/fraud_detection/src/adapters/concurrent_buffer.rs` (TDD Red: create file with test stubs only, no impl)
-- [ ] T003 Implement `ConcurrentBufferInner { data: Vec<Transaction>, closed: bool }` wrapped in `RefCell`, outer `ConcurrentBuffer` struct, `new()` (#[must_use]), `close()` (idempotent, sets closed=true) in `crates/fraud_detection/src/adapters/concurrent_buffer.rs`
-- [ ] T004 Implement `Buffer1` trait (`write_batch`: appends if open, returns `Err(BufferError::Closed)` if closed) for `ConcurrentBuffer` in `crates/fraud_detection/src/adapters/concurrent_buffer.rs`
-- [ ] T005 Implement `Buffer1Read` trait (`read_batch`: returns data via `Vec::drain(..count)` if available; drops borrow then calls `tokio::task::yield_now().await` and retries if empty+open; returns `Err(BufferError::Closed)` if empty+closed) for `ConcurrentBuffer` in `crates/fraud_detection/src/adapters/concurrent_buffer.rs`
-- [ ] T006 Register `pub mod concurrent_buffer` in `crates/fraud_detection/src/adapters/mod.rs`; run `cargo test --workspace` -- all 6 CB tests green, all 55 prior tests still pass
+- [X] T002 Write ConcurrentBuffer test module (CB-T01 to CB-T06: write/read roundtrip, empty+closed error, write-to-closed error, drain from front, idempotent close, yield-unblocks scenario) in `crates/fraud_detection/src/adapters/concurrent_buffer.rs` (TDD Red: create file with test stubs only, no impl)
+- [X] T003 Implement `ConcurrentBufferInner { data: Vec<Transaction>, closed: bool }` wrapped in `RefCell`, outer `ConcurrentBuffer` struct, `new()` (#[must_use]), `close()` (idempotent, sets closed=true) in `crates/fraud_detection/src/adapters/concurrent_buffer.rs`
+- [X] T004 Implement `Buffer1` trait (`write_batch`: appends if open, returns `Err(BufferError::Closed)` if closed) for `ConcurrentBuffer` in `crates/fraud_detection/src/adapters/concurrent_buffer.rs`
+- [X] T005 Implement `Buffer1Read` trait (`read_batch`: returns data via `Vec::drain(..count)` if available; drops borrow then calls `tokio::task::yield_now().await` and retries if empty+open; returns `Err(BufferError::Closed)` if empty+closed) for `ConcurrentBuffer` in `crates/fraud_detection/src/adapters/concurrent_buffer.rs`
+- [X] T006 Register `pub mod concurrent_buffer` in `crates/fraud_detection/src/adapters/mod.rs`; run `cargo test --workspace` -- all 6 CB tests green, all 55 prior tests still pass
 
 **Checkpoint**: ConcurrentBuffer fully tested and registered -- user story implementation can now begin
 
@@ -53,9 +53,9 @@ app exits cleanly on its own with no error.
 
 ### Implementation for User Story 1
 
-- [ ] T007 [US1] Replace `InMemoryBuffer` with `ConcurrentBuffer` in `crates/fraud_detection/src/main.rs`; wrap producer call in `let producer_task = async { let r = producer.run(&buffer1).await; buffer1.close(); r };` to propagate finite-mode shutdown via buffer closure
-- [ ] T008 [US1] Replace sequential `producer.run()`/`consumer.run()` calls with `let (p, c) = tokio::join!(producer_task, consumer.run(&buffer1, &modelizer, &alarm)).await; p.context("producer failed")?; c.context("consumer failed")?;` in `crates/fraud_detection/src/main.rs`
-- [ ] T009 [US1] Set `ConsumerConfig` `speed2` to `Duration::from_millis(25)` (ensures Consumer yields regularly so Producer gets CPU time) in `crates/fraud_detection/src/main.rs`
+- [X] T007 [US1] Replace `InMemoryBuffer` with `ConcurrentBuffer` in `crates/fraud_detection/src/main.rs`; wrap producer call in `let producer_task = async { let r = producer.run(&buffer1).await; buffer1.close(); r };` to propagate finite-mode shutdown via buffer closure
+- [X] T008 [US1] Replace sequential `producer.run()`/`consumer.run()` calls with `let (p, c) = tokio::join!(producer_task, consumer.run(&buffer1, &modelizer, &alarm)).await; p.context("producer failed")?; c.context("consumer failed")?;` in `crates/fraud_detection/src/main.rs`
+- [X] T009 [US1] Set `ConsumerConfig` `speed2` to `Duration::from_millis(25)` (ensures Consumer yields regularly so Producer gets CPU time) in `crates/fraud_detection/src/main.rs`
 
 **Checkpoint**: `tokio::join!` wired; app exits cleanly after finite Producer run (set iterations(10) to test); US1 scenarios verified manually
 
@@ -72,8 +72,8 @@ no hang, shutdown message logged at info level).
 
 ### Implementation for User Story 2
 
-- [ ] T010 [US2] Wrap `tokio::join!` in `tokio::select!` with two arms: `_ = tokio::signal::ctrl_c() => { log::info!("main.shutdown: ctrl_c received, closing buffer"); buffer1.close(); }` and `(p, c) = tokio::join!(producer_task, consumer.run(...)) => { p.context(...)?; c.context(...)?; }` in `crates/fraud_detection/src/main.rs`
-- [ ] T011 [US2] Set `ProducerConfig` `iterations` to `None` (infinite mode default) in `crates/fraud_detection/src/main.rs` so CTRL+C is the only way to stop the default run
+- [X] T010 [US2] Wrap `tokio::join!` in `tokio::select!` with two arms: `_ = tokio::signal::ctrl_c() => { log::info!("main.shutdown: ctrl_c received, closing buffer"); buffer1.close(); }` and `(p, c) = tokio::join!(producer_task, consumer.run(...)) => { p.context(...)?; c.context(...)?; }` in `crates/fraud_detection/src/main.rs`
+- [X] T011 [US2] Set `ProducerConfig` `iterations` to `None` (infinite mode default) in `crates/fraud_detection/src/main.rs` so CTRL+C is the only way to stop the default run
 
 **Checkpoint**: Running app requires CTRL+C to stop; press it, verify clean exit (exit code 0, shutdown log line present); US2 scenarios verified manually
 
@@ -89,9 +89,9 @@ automated tests pass with no modifications to test code (FR-008 / SC-003).
 
 ### Implementation for User Story 3
 
-- [ ] T012 [P] [US3] Add `log::info!("producer.run.stopped: iteration limit reached")` in the iteration-limit return branch of `Producer::run()` in `crates/producer/src/lib.rs` (FR-009)
-- [ ] T013 [P] [US3] Add `log::info!("consumer.run.stopped: iteration limit reached")` in the iteration-limit return branch of `Consumer::run()` in `crates/consumer/src/lib.rs` (FR-009)
-- [ ] T014 [US3] Run `cargo test --workspace` and confirm all 55 tests pass; fix any regression before proceeding (FR-008 / SC-003)
+- [X] T012 [P] [US3] Add `log::info!("producer.run.stopped: iteration limit reached")` in the iteration-limit return branch of `Producer::run()` in `crates/producer/src/lib.rs` (FR-009)
+- [X] T013 [P] [US3] Add `log::info!("consumer.run.stopped: iteration limit reached")` in the iteration-limit return branch of `Consumer::run()` in `crates/consumer/src/lib.rs` (FR-009)
+- [X] T014 [US3] Run `cargo test --workspace` and confirm all 55 tests pass; fix any regression before proceeding (FR-008 / SC-003)
 
 **Checkpoint**: All 55 tests green; FR-009 logs visible in demo run; US3 scenarios verified manually
 
@@ -101,8 +101,8 @@ automated tests pass with no modifications to test code (FR-008 / SC-003).
 
 **Purpose**: ms-rust compliance review and quickstart validation.
 
-- [ ] T015 [P] Review changed files for ms-rust compliance (`#[derive(Debug)]`, `#[must_use]` on constructors, `#[expect(..., reason="...")]` not `#[allow]`, doc comments, compliance comment) in `crates/fraud_detection/src/adapters/concurrent_buffer.rs`, `crates/producer/src/lib.rs`, `crates/consumer/src/lib.rs`, `crates/fraud_detection/src/main.rs`
-- [ ] T016 Run quickstart.md validation: (1) `$env:RUST_LOG='info'; cargo run` in infinite mode -- observe interleaved logs, press CTRL+C, verify exit 0; (2) set `iterations(10)` in `main.rs`, rerun -- verify auto-exit with no manual intervention; (3) `cargo test --workspace` -- confirm 55 tests pass
+- [X] T015 [P] Review changed files for ms-rust compliance (`#[derive(Debug)]`, `#[must_use]` on constructors, `#[expect(..., reason="...")]` not `#[allow]`, doc comments, compliance comment) in `crates/fraud_detection/src/adapters/concurrent_buffer.rs`, `crates/producer/src/lib.rs`, `crates/consumer/src/lib.rs`, `crates/fraud_detection/src/main.rs`
+- [X] T016 Run quickstart.md validation: (1) `$env:RUST_LOG='info'; cargo run` in infinite mode -- observe interleaved logs, press CTRL+C, verify exit 0; (2) set `iterations(10)` in `main.rs`, rerun -- verify auto-exit with no manual intervention; (3) `cargo test --workspace` -- confirm 55 tests pass
 
 ---
 

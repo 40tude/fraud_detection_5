@@ -3,12 +3,13 @@
 //! Fraud-detection pipeline entry point.
 //!
 //! Wires all pipeline components (Producer, Consumer, Modelizer) to their
-//! in-memory and DEMO adapters and runs a proof-of-concept end-to-end pipeline.
+//! concurrent-buffer and DEMO adapters and runs a proof-of-concept concurrent
+//! end-to-end pipeline.
 //!
 //! # Usage
 //!
 //! ```text
-//! # Show iteration-level log lines
+//! # Infinite mode -- press CTRL+C to stop
 //! $env:RUST_LOG='info'; cargo run; Remove-Item env:RUST_LOG
 //!
 //! # Also show per-transaction debug output
@@ -17,8 +18,8 @@
 
 mod adapters;
 
+use adapters::concurrent_buffer::ConcurrentBuffer;
 use adapters::demo_model::DemoModel;
-use adapters::in_memory_buffer::InMemoryBuffer;
 use adapters::in_memory_buffer2::InMemoryBuffer2;
 use adapters::log_alarm::LogAlarm;
 use anyhow::Context as _;
@@ -32,33 +33,27 @@ async fn main() -> anyhow::Result<()> {
     // Initialize the log facade before any async work.
     env_logger::init();
 
-    // -- Producer: write 10 batches of up to 100 transactions into Buffer1 --
+    // -- Producer: infinite mode by default; press CTRL+C to stop --
+    // Set .iterations(10) here for a finite demo run.
     let producer_config = ProducerConfig::builder(100)
-        // 10 batches is enough to demonstrate the pipeline without running forever.
-        .iterations(10)
-        // 50 ms between batches so logs are readable in real time.
-        .speed1(Duration::from_millis(50))
+        // 50 ms between batches keeps logs readable in real time.
+        .speed1(Duration::from_millis(500))
+        // .iterations(10)
         .build()
         .context("failed to build producer config")?;
 
-    let buffer1 = InMemoryBuffer::new();
+    // ConcurrentBuffer: shared by Producer (write) and Consumer (read).
+    let buffer1 = ConcurrentBuffer::new();
     let producer = Producer::new(producer_config);
-
-    producer
-        .run(&buffer1)
-        .await
-        .context("producer run failed")?;
-
-    log::info!("producer.run.complete");
 
     // -- Consumer: drain Buffer1 -> Modelizer<DemoModel> -> Buffer2 --
     let consumer_config = ConsumerConfig::builder(50)
-        // No delay in demo: drain the pre-filled Buffer1 as fast as possible.
-        .speed2(Duration::ZERO)
+        // 25 ms ensures Consumer yields regularly so Producer gets CPU time.
+        .speed2(Duration::from_millis(250))
         .build()
         .context("failed to build consumer config")?;
 
-    // Generous capacity: 10 batches * 100 max tx = up to 1000 transactions.
+    // Generous capacity: enough for continuous concurrent operation.
     let buffer2 = InMemoryBuffer2::new(2_000);
     // DEMO model: OS-seeded RNG, starts at version N (version 4, ~4% fraud rate).
     let model = DemoModel::new(None);
@@ -66,12 +61,34 @@ async fn main() -> anyhow::Result<()> {
     let alarm = LogAlarm::new();
     let consumer = Consumer::new(consumer_config);
 
-    consumer
-        .run(&buffer1, &modelizer, &alarm, &buffer2)
-        .await
-        .context("consumer run failed")?;
+    // Wrap the concurrent pair in one async block (FR-001, FR-002, Decision 3).
+    // Finite-mode: producer.run completes -> close() -> consumer drains -> join resolves.
+    let pipeline = async {
+        // tokio::join! polls both futures concurrently and returns the tuple directly.
+        let (p, c) = tokio::join!(
+            async {
+                let r = producer.run(&buffer1).await;
+                // Close buffer so Consumer exits cleanly after draining (FR-005).
+                buffer1.close();
+                r
+            },
+            consumer.run(&buffer1, &modelizer, &alarm, &buffer2)
+        );
+        p.context("producer failed")
+            .and(c.context("consumer failed"))
+    };
 
-    log::info!("consumer.run.complete");
+    // Race the pipeline against CTRL+C (FR-004, Decision 4).
+    // CTRL+C: close buffer, cancel both tasks, exit cleanly (SC-002).
+    tokio::select! {
+        _ = tokio::signal::ctrl_c() => {
+            log::info!("main.shutdown: ctrl_c received, closing buffer");
+            buffer1.close();
+        }
+        result = pipeline => {
+            result?;
+        }
+    }
 
     Ok(())
 }

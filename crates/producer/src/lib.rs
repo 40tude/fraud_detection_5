@@ -1,4 +1,4 @@
-// Rust guideline compliant 2026-02-16
+// Rust guideline compliant 2026-02-23
 
 //! Producer component -- generates random transaction batches and writes them
 //! to a `Buffer1` hexagonal port.
@@ -236,6 +236,7 @@ impl Producer {
             if let Some(max) = self.config.iterations
                 && count >= max
             {
+                log::info!("producer.run.stopped: iteration limit reached");
                 return Ok(());
             }
 
