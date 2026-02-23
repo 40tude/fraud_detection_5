@@ -246,6 +246,7 @@ impl Consumer {
             if let Some(max) = self.config.iterations
                 && count >= max
             {
+                log::info!("consumer.run.stopped: iteration limit reached");
                 return Ok(());
             }
 
