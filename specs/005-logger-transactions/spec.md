@@ -5,6 +5,14 @@
 **Status**: Draft
 **Input**: User description: "Logger extracts from Buffer2 batches of inferred_transaction at speed3. Batches are of size N3 which vary at each iteration [1, N3_MAX]. Logger writes pending_transactions. pending_transaction = inferred_transaction + {prediction_confirmed (=F)}. The field prediction_confirmed of each transaction is set to False. The field prediction_confirmed will be updated later once the transaction is fully checked. The Logger has no idea about Buffer2 nor Storage implementation (decoupling with ports and adapters). Similarly to Producer, the Logger runs asynchronously until the app ends."
 
+## Clarifications
+
+### Session 2026-02-23
+
+- Q: PendingTransaction composition or flat struct? → A: Composition -- wraps `InferredTransaction` (consistent with `InferredTransaction` wrapping `Transaction`).
+- Q: Storage error type: reuse BufferError or new enum? → A: New `StorageError` enum with distinct variant names (`Unavailable`, `CapacityExceeded`) -- Storage is not a buffer.
+- Q: Include Logger integration in main.rs (concurrent pipeline) in this feature? → A: Yes, full end-to-end including wiring into `tokio::join!`.
+
 ## User Scenarios & Testing
 
 ### User Story 1 - Read Batches from Buffer2 (Priority: P1)
@@ -51,8 +59,8 @@ After transformation, the Logger writes each batch of pending transactions to St
 **Acceptance Scenarios**:
 
 1. **Given** a batch of 8 pending transactions, **When** Logger writes to Storage, **Then** all 8 transactions appear in Storage.
-2. **Given** Storage is full, **When** Logger attempts to write, **Then** a capacity error propagates to the caller.
-3. **Given** Storage is closed, **When** Logger attempts to write, **Then** a closed error propagates to the caller.
+2. **Given** Storage is full, **When** Logger attempts to write, **Then** `StorageError::CapacityExceeded` propagates to the caller.
+3. **Given** Storage is unavailable, **When** Logger attempts to write, **Then** `StorageError::Unavailable` propagates to the caller.
 
 ---
 
@@ -96,14 +104,15 @@ The Logger runs as a continuous async loop: read batch, transform, persist, wait
 - **FR-007**: Logger MUST operate at speed3, defined as a configurable delay (duration) between processing iterations.
 - **FR-008**: Logger MUST run indefinitely by default (no iteration limit). An optional iteration limit MAY be configured for testing.
 - **FR-009**: Logger MUST stop gracefully when Buffer2 is closed and fully drained, returning success (not an error).
-- **FR-010**: Logger MUST propagate errors from Buffer2 and Storage ports to the caller immediately.
+- **FR-010**: Logger MUST propagate errors from Buffer2 (`BufferError`) and Storage (`StorageError`) ports to the caller immediately.
 - **FR-011**: Logger MUST log iteration metadata (batch size, iteration number) using the log facade.
 
 ### Key Entities
 
-- **PendingTransaction**: An inferred transaction enriched with a verification status. Carries all fields of InferredTransaction plus `prediction_confirmed` (boolean, initially false). Represents a transaction awaiting full verification.
+- **PendingTransaction**: Composition struct wrapping `InferredTransaction` plus `prediction_confirmed: bool` (initially false). Follows the same nesting pattern as `InferredTransaction { transaction: Transaction, ... }`. Represents a transaction awaiting full verification.
 - **Buffer2Read**: Hexagonal port for reading batches of inferred transactions from the second buffer. Symmetric to Buffer1Read.
-- **Storage**: Hexagonal port for writing batches of pending transactions to a persistent store. The Logger depends exclusively on this trait.
+- **Storage**: Hexagonal port for writing batches of pending transactions to a persistent store. The Logger depends exclusively on this trait. Returns `StorageError` (not `BufferError`) with variants `CapacityExceeded` and `Unavailable`.
+- **StorageError**: Dedicated error enum for the Storage port. Variants: `CapacityExceeded { capacity: usize }` (store is full), `Unavailable` (store is closed/unreachable). Distinct from `BufferError` to reinforce the conceptual boundary between buffers and storage.
 - **LoggerConfig**: Configuration for the Logger. Contains N3_MAX (maximum batch size), speed3 (delay between iterations), and an optional iteration limit.
 
 ## Success Criteria
@@ -115,14 +124,15 @@ The Logger runs as a continuous async loop: read batch, transform, persist, wait
 - **SC-003**: All pending transactions in each batch are persisted to Storage after transformation.
 - **SC-004**: Logger stops within one iteration after Buffer2 signals closed and is drained.
 - **SC-005**: Both hexagonal ports (Buffer2Read, Storage) are swappable without modifying Logger domain logic.
-- **SC-006**: Logger can run continuously in the concurrent pipeline alongside Producer, Consumer, and Modelizer without blocking other components.
+- **SC-006**: Logger is wired into `main.rs` via `tokio::join!` alongside Producer, Consumer, and Modelizer; runs end-to-end without blocking other components.
 
 ## Assumptions
 
 - **speed3** follows the same pattern as Producer's speed1 and Consumer's speed2: a configurable async delay (duration) inserted between processing iterations.
 - **Buffer2Read** is a new trait in the domain crate, symmetric to Buffer1Read, returning batches of `InferredTransaction`.
-- **Storage** is a new trait in the domain crate for writing batches of `PendingTransaction`. It follows the same error pattern as Buffer traits (full, closed).
-- **PendingTransaction** is a new domain type in the domain crate, wrapping InferredTransaction with an additional `prediction_confirmed` field.
+- **Storage** is a new trait in the domain crate for writing batches of `PendingTransaction`. It uses a dedicated `StorageError` enum (`CapacityExceeded`, `Unavailable`) rather than reusing `BufferError`.
+- **PendingTransaction** is a new domain type in the domain crate using composition: `PendingTransaction { inferred_transaction: InferredTransaction, prediction_confirmed: bool }`.
 - **Error handling**: Buffer2 and Storage errors propagate immediately. No retry logic in the Logger.
 - **Logger crate** is a new library crate in the workspace, following the same structure as producer and consumer crates.
 - **Iteration logging** uses the `log` facade crate at debug level, consistent with other pipeline components.
+- **Pipeline integration** is in scope: Logger is wired into `main.rs` via `tokio::join!` with a ConcurrentBuffer2 (Buffer2Read adapter) and an InMemoryStorage adapter, following the pattern established in feature 004.
