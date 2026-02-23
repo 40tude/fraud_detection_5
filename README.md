@@ -1,4 +1,4 @@
-# fraud_detection
+# fraud_detection 5
 
 > **Warning:** The `.cargo/` folder contains Windows-specific configuration (custom `target-dir` for OneDrive, CPU flags). Delete or rename before building:
 > ```bash
@@ -9,18 +9,22 @@
 
 ## Description
 
-[Add project description here]
+First tests with speckit and SDD.
+
 
 ## Installation
 
 ```bash
+cargo build
 cargo build --release
 ```
 
 ## Usage
 
 ```bash
+$env:RUST_LOG='info'; cargo run; Remove-Item env:RUST_LOG
 cargo run
+
 ```
 
 ## Testing
