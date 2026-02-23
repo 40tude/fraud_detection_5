@@ -69,7 +69,7 @@ panic or error output.
    middle of a batch operation, **Then** the component finishes its current
    batch before stopping (no partial batches abandoned mid-flight).
 3. **Given** the pipeline receives CTRL+C, **When** components stop,
-   **Then** the app exits within a reasonable time (no hang or deadlock).
+   **Then** the app exits within 5 seconds (no hang or deadlock).
 
 ---
 
@@ -103,13 +103,20 @@ no manual intervention required.
 
 ### Edge Cases
 
-- What happens if CTRL+C is received before Consumer has read any data
-  (Producer just started filling the buffer)?
-- What happens if the buffer is full when a shutdown signal arrives and
-  Producer is trying to write?
-- What happens if Consumer is blocked waiting on an empty buffer when
-  CTRL+C is received?
-- What happens if both the iteration limit and CTRL+C fire simultaneously?
+- **CTRL+C before Consumer reads any data**: buffer.close() is called;
+  Producer's next write_batch returns Err(BufferError::Closed) and stops;
+  Consumer's next read returns Err(BufferError::Closed) and stops. No data
+  loss risk -- nothing was committed to the buffer yet.
+- **Buffer full + shutdown signal**: write_batch returns
+  Err(BufferError::Closed) immediately when the buffer is closed,
+  regardless of capacity. Producer stops on next poll.
+- **Consumer blocked on empty buffer + CTRL+C**: buffer.close() unblocks
+  the read call with Err(BufferError::Closed); Consumer stops cleanly.
+- **Iteration limit and CTRL+C fire simultaneously**: tokio::select! in
+  main resolves to whichever branch completes first. If join! completes
+  first (iteration limit), the select! exits normally. If ctrl_c fires
+  first, buffer.close() is called; the join! branch resolves shortly after
+  as both tasks detect Closed. Either ordering produces a clean exit.
 
 ## Requirements *(mandatory)*
 
@@ -121,9 +128,11 @@ no manual intervention required.
   Consumer MUST run indefinitely until an external stop signal is received.
 - **FR-003**: The application MUST handle a CTRL+C (interrupt) signal and
   stop all pipeline components cleanly as a result.
-- **FR-004**: Shutdown via CTRL+C MUST propagate by closing Buffer1, which
-  causes each component to detect the closure and return normally without
-  error.
+- **FR-004**: Shutdown via CTRL+C MUST propagate by closing Buffer1: `main`
+  uses `tokio::select!` to race `tokio::signal::ctrl_c()` against
+  `tokio::join!(producer.run(), consumer.run())`; on signal receipt, `main`
+  calls `buffer.close()` directly, after which both tasks detect
+  `BufferError::Closed` and return normally without error.
 - **FR-005**: The pipeline MUST support a finite iteration mode: when
   Producer is configured with a fixed iteration count, it stops after that
   count and shutdown propagates naturally to Consumer via buffer closure.
@@ -133,8 +142,9 @@ no manual intervention required.
   introduced by this feature.
 - **FR-008**: All 55 existing automated tests MUST pass after the
   refactoring without any modification to test code.
-- **FR-009**: The pipeline MUST log a clear message when each component
-  stops, indicating the reason (buffer closed or iteration limit reached).
+- **FR-009**: The pipeline MUST log an `info`-level message when each
+  component stops, indicating the reason (buffer closed or iteration
+  limit reached).
 
 ## Success Criteria *(mandatory)*
 
@@ -142,7 +152,8 @@ no manual intervention required.
 
 - **SC-001**: When the app runs with no iteration limit, log output from
   Producer and Consumer interleaves -- neither component runs entirely
-  before the other begins.
+  before the other begins. Verified by manual observation of the binary
+  log output; no automated test for interleaving order is required.
 - **SC-002**: When CTRL+C is pressed on a running pipeline, the application
   exits cleanly (exit code 0) with no panic, no error output, and no hang.
 - **SC-003**: All 55 existing automated tests pass after the refactoring
@@ -164,3 +175,13 @@ no manual intervention required.
   written to Buffer1 at the moment of shutdown are acceptable losses.
 - Logger component wiring is explicitly out of scope and deferred to
   feature 005.
+
+## Clarifications
+
+### Session 2026-02-23
+
+- Q: Shutdown orchestration pattern -- who calls buffer.close() and when? → A: `tokio::select!` in main races `ctrl_c()` against `join!(producer.run(), consumer.run())`; on CTRL+C, main calls `buffer.close()` directly.
+- Q: Maximum acceptable shutdown duration ("reasonable time")? → A: 5 seconds; no forced timeout wrapper in this feature -- hanging after 5 s indicates a bug.
+- Q: Automated test required for SC-001 interleaving? → A: Manual observation only; no automated interleaving test needed.
+- Q: write_batch behavior when buffer is closed mid-write? → A: Returns Err(BufferError::Closed) immediately; no flush/drain.
+- Q: Log level for FR-009 component-stop messages? → A: `info`.
