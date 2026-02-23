@@ -22,9 +22,9 @@ and testing of each story.
 
 **Purpose**: Cargo workspace extension and consumer crate initialization.
 
-- [ ] T001 Add `consumer` to `members` list in `Cargo.toml`
-- [ ] T002 Create `crates/consumer/Cargo.toml` (package name, edition 2024, workspace deps: domain, rand, thiserror, log, tokio with rt+macros features)
-- [ ] T003 Create `crates/consumer/src/lib.rs` (crate-level doc comment, clippy deny/warn attributes matching producer pattern)
+- [X] T001 Add `consumer` to `members` list in `Cargo.toml`
+- [X] T002 Create `crates/consumer/Cargo.toml` (package name, edition 2024, workspace deps: domain, rand, thiserror, log, tokio with rt+macros features)
+- [X] T003 Create `crates/consumer/src/lib.rs` (crate-level doc comment, clippy deny/warn attributes matching producer pattern)
 
 ---
 
@@ -34,20 +34,20 @@ and testing of each story.
 
 **CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T004 Add `InferredTransaction` struct (transaction: Transaction, predicted_fraud: bool, model_name: String, model_version: String; derives: Debug, Clone, PartialEq; `#[must_use]` id(&self) accessor delegating to self.transaction.id) to `crates/domain/src/lib.rs`
-- [ ] T005 Add `ModelVersion` enum (N, NMinus1; derives: Debug, Clone, Copy, PartialEq, Eq) to `crates/domain/src/lib.rs`
-- [ ] T006 Add `ModelizerError` enum (InferenceFailed { reason: String }, SwitchFailed { reason: String }; thiserror::Error Display) to `crates/domain/src/lib.rs`
-- [ ] T007 Add `AlarmError` enum (DeliveryFailed { reason: String }; thiserror::Error Display) to `crates/domain/src/lib.rs`
-- [ ] T008 Add `Buffer1Read` trait (async fn read_batch(&self, max: usize) -> Result<Vec<Transaction>, BufferError>; `#[expect(async_fn_in_trait, reason="...")]` on trait only) to `crates/domain/src/lib.rs`
-- [ ] T009 Add `Buffer2` trait (async fn write_batch(&self, batch: Vec<InferredTransaction>) -> Result<(), BufferError>; `#[expect(async_fn_in_trait, reason="...")]` on trait only) to `crates/domain/src/lib.rs`
-- [ ] T010 Add `Modelizer` trait (async fn infer(&self, batch: Vec<Transaction>) -> Result<Vec<InferredTransaction>, ModelizerError>; async fn switch_version(&self, version: ModelVersion) -> Result<(), ModelizerError>; `#[expect(async_fn_in_trait, reason="...")]` on trait only) to `crates/domain/src/lib.rs`
-- [ ] T011 Add `Alarm` trait (async fn trigger(&self, transaction: &InferredTransaction) -> Result<(), AlarmError>; `#[expect(async_fn_in_trait, reason="...")]` on trait only) to `crates/domain/src/lib.rs`
-- [ ] T012 Write domain unit tests for all new types and traits (inferred_transaction_fields, model_version_variants, modelizer_error_variants, alarm_error_variants, port_trait_struct_impl verifying AFIT compiles) in `crates/domain/src/lib.rs`
-- [ ] T013 Add `ConsumerError` enum (InvalidConfig { reason: String }, Read(BufferError), Inference(ModelizerError), Write(BufferError); thiserror::Error; no `#[from]` on Read/Write -- same source type) to `crates/consumer/src/lib.rs`
-- [ ] T014 Add `ConsumerConfig` struct (n2_max: usize, speed2: Duration, iterations: Option<u64>, seed: Option<u64>), `ConsumerConfigBuilder`, and `ConsumerConfig::builder(n2_max: usize)` factory with n2_max >= 1 validation returning Result<ConsumerConfig, ConsumerError> to `crates/consumer/src/lib.rs`
-- [ ] T015 Write failing tests for ConsumerConfig validation (config_rejects_zero_n2_max, builder_defaults_speed2, builder_with_seed, builder_with_iterations) in `crates/consumer/src/lib.rs`
-- [ ] T016 Add `Consumer` struct (config: ConsumerConfig, rng: RefCell<StdRng>) and `#[must_use] Consumer::new(config: ConsumerConfig) -> Self` (seeds StdRng from config.seed or OS RNG) to `crates/consumer/src/lib.rs`
-- [ ] T017 Add `#[cfg(test)]` mock adapters (MockBuffer1Read with preloaded Vec<Transaction> + closed flag, MockModelizer with configurable predicted_fraud flag + call counter, MockAlarm with call counter + optional failure mode, MockBuffer2 with captured Vec<InferredTransaction> + optional error mode) to `crates/consumer/src/lib.rs`
+- [X] T004 Add `InferredTransaction` struct (transaction: Transaction, predicted_fraud: bool, model_name: String, model_version: String; derives: Debug, Clone, PartialEq; `#[must_use]` id(&self) accessor delegating to self.transaction.id) to `crates/domain/src/lib.rs`
+- [X] T005 Add `ModelVersion` enum (N, NMinus1; derives: Debug, Clone, Copy, PartialEq, Eq) to `crates/domain/src/lib.rs`
+- [X] T006 Add `ModelizerError` enum (InferenceFailed { reason: String }, SwitchFailed { reason: String }; thiserror::Error Display) to `crates/domain/src/lib.rs`
+- [X] T007 Add `AlarmError` enum (DeliveryFailed { reason: String }; thiserror::Error Display) to `crates/domain/src/lib.rs`
+- [X] T008 Add `Buffer1Read` trait (async fn read_batch(&self, max: usize) -> Result<Vec<Transaction>, BufferError>; `#[expect(async_fn_in_trait, reason="...")]` on trait only) to `crates/domain/src/lib.rs`
+- [X] T009 Add `Buffer2` trait (async fn write_batch(&self, batch: Vec<InferredTransaction>) -> Result<(), BufferError>; `#[expect(async_fn_in_trait, reason="...")]` on trait only) to `crates/domain/src/lib.rs`
+- [X] T010 Add `Modelizer` trait (async fn infer(&self, batch: Vec<Transaction>) -> Result<Vec<InferredTransaction>, ModelizerError>; async fn switch_version(&self, version: ModelVersion) -> Result<(), ModelizerError>; `#[expect(async_fn_in_trait, reason="...")]` on trait only) to `crates/domain/src/lib.rs`
+- [X] T011 Add `Alarm` trait (async fn trigger(&self, transaction: &InferredTransaction) -> Result<(), AlarmError>; `#[expect(async_fn_in_trait, reason="...")]` on trait only) to `crates/domain/src/lib.rs`
+- [X] T012 Write domain unit tests for all new types and traits (inferred_transaction_fields, model_version_variants, modelizer_error_variants, alarm_error_variants, port_trait_struct_impl verifying AFIT compiles) in `crates/domain/src/lib.rs`
+- [X] T013 Add `ConsumerError` enum (InvalidConfig { reason: String }, Read(BufferError), Inference(ModelizerError), Write(BufferError); thiserror::Error; no `#[from]` on Read/Write -- same source type) to `crates/consumer/src/lib.rs`
+- [X] T014 Add `ConsumerConfig` struct (n2_max: usize, speed2: Duration, iterations: Option<u64>, seed: Option<u64>), `ConsumerConfigBuilder`, and `ConsumerConfig::builder(n2_max: usize)` factory with n2_max >= 1 validation returning Result<ConsumerConfig, ConsumerError> to `crates/consumer/src/lib.rs`
+- [X] T015 Write failing tests for ConsumerConfig validation (config_rejects_zero_n2_max, builder_defaults_speed2, builder_with_seed, builder_with_iterations) in `crates/consumer/src/lib.rs`
+- [X] T016 Add `Consumer` struct (config: ConsumerConfig, rng: RefCell<StdRng>) and `#[must_use] Consumer::new(config: ConsumerConfig) -> Self` (seeds StdRng from config.seed or OS RNG) to `crates/consumer/src/lib.rs`
+- [X] T017 Add `#[cfg(test)]` mock adapters (MockBuffer1Read with preloaded Vec<Transaction> + closed flag, MockModelizer with configurable predicted_fraud flag + call counter, MockAlarm with call counter + optional failure mode, MockBuffer2 with captured Vec<InferredTransaction> + optional error mode) to `crates/consumer/src/lib.rs`
 
 **Checkpoint**: consumer crate compiles, domain has all 4 port traits and 4 new types
 
@@ -65,13 +65,13 @@ within [1, N2_MAX]; verify Consumer stops when MockBuffer1Read signals Closed.
 
 > **TDD**: Tests T018-T019 fail to compile until T020-T021 implement consume_once/run
 
-- [ ] T018 [US1] Write failing tests for read behavior (batch_size_within_n2_max_range, batch_size_capped_by_available_data, seeded_batch_size_is_deterministic) using MockBuffer1Read in `crates/consumer/src/lib.rs`
-- [ ] T019 [US1] Write failing tests for run loop (run_processes_n_iterations, run_stops_gracefully_on_closed) using MockBuffer1Read in `crates/consumer/src/lib.rs`
+- [X] T018 [US1] Write failing tests for read behavior (batch_size_within_n2_max_range, batch_size_capped_by_available_data, seeded_batch_size_is_deterministic) using MockBuffer1Read in `crates/consumer/src/lib.rs`
+- [X] T019 [US1] Write failing tests for run loop (run_processes_n_iterations, run_stops_gracefully_on_closed) using MockBuffer1Read in `crates/consumer/src/lib.rs`
 
 ### Implementation for User Story 1
 
-- [ ] T020 [US1] Implement `Consumer::consume_once<B1, M, A, B2>` (draw N2 from rng in [1, n2_max], call buf1.read_batch(N2), call modelizer.infer(batch), write to buf2.write_batch; alarm loop placeholder returns Ok(vec![])) in `crates/consumer/src/lib.rs`
-- [ ] T021 [US1] Implement `Consumer::run<B1, M, A, B2>` (loop: call consume_once, sleep speed2, stop on ConsumerError::Read wrapping BufferError::Closed, propagate other errors) in `crates/consumer/src/lib.rs`
+- [X] T020 [US1] Implement `Consumer::consume_once<B1, M, A, B2>` (draw N2 from rng in [1, n2_max], call buf1.read_batch(N2), call modelizer.infer(batch), write to buf2.write_batch; alarm loop placeholder returns Ok(vec![])) in `crates/consumer/src/lib.rs`
+- [X] T021 [US1] Implement `Consumer::run<B1, M, A, B2>` (loop: call consume_once, sleep speed2, stop on ConsumerError::Read wrapping BufferError::Closed, propagate other errors) in `crates/consumer/src/lib.rs`
 
 **Checkpoint**: US1 tests pass; Consumer reads batches and stops on closed signal
 
@@ -88,12 +88,12 @@ ModelizerError surfaces as ConsumerError::Inference.
 
 ### Tests for User Story 2
 
-- [ ] T022 [US2] Write failing tests for Modelizer interaction (consume_once_sends_full_batch_to_modelizer, inference_error_propagates_as_consumer_error_inference) using MockModelizer in `crates/consumer/src/lib.rs`
-- [ ] T023 [US2] Write test verifying InferredTransaction enrichment fields (predicted_fraud, model_name, model_version from MockModelizer) survive through consume_once pipeline in `crates/consumer/src/lib.rs`
+- [X] T022 [US2] Write failing tests for Modelizer interaction (consume_once_sends_full_batch_to_modelizer, inference_error_propagates_as_consumer_error_inference) using MockModelizer in `crates/consumer/src/lib.rs`
+- [X] T023 [US2] Write test verifying InferredTransaction enrichment fields (predicted_fraud, model_name, model_version from MockModelizer) survive through consume_once pipeline in `crates/consumer/src/lib.rs`
 
 ### Implementation for User Story 2
 
-- [ ] T024 [US2] Verify/fix consume_once Modelizer integration (ModelizerError mapped to ConsumerError::Inference via manual .map_err(), not #[from]) in `crates/consumer/src/lib.rs`
+- [X] T024 [US2] Verify/fix consume_once Modelizer integration (ModelizerError mapped to ConsumerError::Inference via manual .map_err(), not #[from]) in `crates/consumer/src/lib.rs`
 
 **Checkpoint**: US2 tests pass; Modelizer errors propagate correctly
 
@@ -110,11 +110,11 @@ ConsumerError::Write.
 
 ### Tests for User Story 4
 
-- [ ] T025 [US4] Write failing tests for Buffer2 write (all_inferred_tx_written_to_buf2_regardless_of_fraud, buf2_full_propagates_as_consumer_error_write, buf2_closed_propagates_as_consumer_error_write) using MockBuffer2 in `crates/consumer/src/lib.rs`
+- [X] T025 [US4] Write failing tests for Buffer2 write (all_inferred_tx_written_to_buf2_regardless_of_fraud, buf2_full_propagates_as_consumer_error_write, buf2_closed_propagates_as_consumer_error_write) using MockBuffer2 in `crates/consumer/src/lib.rs`
 
 ### Implementation for User Story 4
 
-- [ ] T026 [US4] Verify/fix consume_once Buffer2 integration (BufferError from write_batch mapped to ConsumerError::Write via manual .map_err(); all InferredTransactions passed regardless of predicted_fraud) in `crates/consumer/src/lib.rs`
+- [X] T026 [US4] Verify/fix consume_once Buffer2 integration (BufferError from write_batch mapped to ConsumerError::Write via manual .map_err(); all InferredTransactions passed regardless of predicted_fraud) in `crates/consumer/src/lib.rs`
 
 **Checkpoint**: US4 tests pass; Buffer2 receives complete inferred batch
 
@@ -134,12 +134,12 @@ verify Buffer2 written even when alarms fail.
 
 > **TDD**: T027-T028 fail against Phase 3 placeholder (Ok(vec![])) until T029 adds alarm loop
 
-- [ ] T027 [US3] Write failing tests for alarm count (exactly_n_alarms_for_n_fraudulent_tx, no_alarms_for_zero_fraudulent_tx, zero_alarms_when_all_legitimate) using MockAlarm in `crates/consumer/src/lib.rs`
-- [ ] T028 [US3] Write failing tests for best-effort alarm delivery (all_alarms_attempted_on_partial_failure, alarm_failures_returned_in_ok_vec, buf2_write_not_blocked_by_alarm_failure) using MockAlarm with failure mode in `crates/consumer/src/lib.rs`
+- [X] T027 [US3] Write failing tests for alarm count (exactly_n_alarms_for_n_fraudulent_tx, no_alarms_for_zero_fraudulent_tx, zero_alarms_when_all_legitimate) using MockAlarm in `crates/consumer/src/lib.rs`
+- [X] T028 [US3] Write failing tests for best-effort alarm delivery (all_alarms_attempted_on_partial_failure, alarm_failures_returned_in_ok_vec, buf2_write_not_blocked_by_alarm_failure) using MockAlarm with failure mode in `crates/consumer/src/lib.rs`
 
 ### Implementation for User Story 3
 
-- [ ] T029 [US3] Extend `Consumer::consume_once` alarm loop (iterate inferred batch; for predicted_fraud==true call alarm.trigger, collect Err into Vec<AlarmError>; write buf2.write_batch regardless; return Ok(alarm_errors)) in `crates/consumer/src/lib.rs`
+- [X] T029 [US3] Extend `Consumer::consume_once` alarm loop (iterate inferred batch; for predicted_fraud==true call alarm.trigger, collect Err into Vec<AlarmError>; write buf2.write_batch regardless; return Ok(alarm_errors)) in `crates/consumer/src/lib.rs`
 
 **Checkpoint**: US3 tests pass; alarms triggered best-effort, failures collected
 
@@ -156,11 +156,11 @@ MockModelizer.last_version == NMinus1.
 
 ### Tests for User Story 5
 
-- [ ] T030 [US5] Write failing tests for model version switch (switch_to_n_minus1_calls_modelizer_switch_version, switch_to_n_calls_modelizer_switch_version, switch_error_maps_to_consumer_error_inference, default_model_version_is_n -- verify MockModelizer starts with version N and infer is called with no prior switch_version call) using MockModelizer in `crates/consumer/src/lib.rs`
+- [X] T030 [US5] Write failing tests for model version switch (switch_to_n_minus1_calls_modelizer_switch_version, switch_to_n_calls_modelizer_switch_version, switch_error_maps_to_consumer_error_inference, default_model_version_is_n -- verify MockModelizer starts with version N and infer is called with no prior switch_version call) using MockModelizer in `crates/consumer/src/lib.rs`
 
 ### Implementation for User Story 5
 
-- [ ] T031 [US5] Implement `Consumer::switch_model_version<M: Modelizer>(&self, modelizer: &M, version: ModelVersion) -> Result<(), ConsumerError>` (call modelizer.switch_version(version).await; map ModelizerError to ConsumerError::Inference) in `crates/consumer/src/lib.rs`
+- [X] T031 [US5] Implement `Consumer::switch_model_version<M: Modelizer>(&self, modelizer: &M, version: ModelVersion) -> Result<(), ConsumerError>` (call modelizer.switch_version(version).await; map ModelizerError to ConsumerError::Inference) in `crates/consumer/src/lib.rs`
 
 **Checkpoint**: US5 tests pass; model version switching delegates to Modelizer
 
@@ -174,13 +174,13 @@ MockModelizer.last_version == NMinus1.
 > T036 depends on T032-T035 (modules must exist before mod.rs declares them).
 > T038 depends on T036 + T037 (adapters + consumer dep must be present).
 
-- [ ] T032 [P] Update `InMemoryBuffer` to implement `Buffer1Read` (add `async fn read_batch(&self, max: usize) -> Result<Vec<Transaction>, BufferError>` draining up to max items; return Err(BufferError::Closed) when closed and empty) in `crates/fraud_detection/src/adapters/in_memory_buffer.rs`
-- [ ] T033 [P] Create `InMemoryBuffer2` struct implementing `Buffer2` trait (wraps `RefCell<VecDeque<InferredTransaction>>`; write_batch appends all; returns BufferError::Full when over capacity; #[must_use] new) in `crates/fraud_detection/src/adapters/in_memory_buffer2.rs`
-- [ ] T034 [P] Create `DemoModelizer` struct implementing `Modelizer` trait (marks all transactions fraudulent or legitimate per config bool; populates model_name="DINN", model_version="v1"; initializes current_version=ModelVersion::N (FR-009); logs infer and switch_version calls) in `crates/fraud_detection/src/adapters/demo_modelizer.rs`
-- [ ] T035 [P] Create `LogAlarm` struct implementing `Alarm` trait (logs fraud alert via `log::warn!` with transaction id; returns Ok(()); #[must_use] new) in `crates/fraud_detection/src/adapters/log_alarm.rs`
-- [ ] T036 Update `crates/fraud_detection/src/adapters/mod.rs` to declare `in_memory_buffer2`, `demo_modelizer`, and `log_alarm` submodules (pub use types)
-- [ ] T037 [P] Add `consumer` workspace dependency to `crates/fraud_detection/Cargo.toml`
-- [ ] T038 Update `crates/fraud_detection/src/main.rs` to construct `ConsumerConfig`, `Consumer`, and call `consumer.run` with `&in_memory_buffer` (Buffer1Read), `&demo_modelizer`, `&log_alarm`, `&in_memory_buffer2`; `run` returns `Result<(), ConsumerError>` -- alarm errors are logged inside `run` per-iteration when `consume_once` returns `Ok(alarm_errors)` with non-empty vec; `main.rs` only handles the outer `Result`
+- [X] T032 [P] Update `InMemoryBuffer` to implement `Buffer1Read` (add `async fn read_batch(&self, max: usize) -> Result<Vec<Transaction>, BufferError>` draining up to max items; return Err(BufferError::Closed) when closed and empty) in `crates/fraud_detection/src/adapters/in_memory_buffer.rs`
+- [X] T033 [P] Create `InMemoryBuffer2` struct implementing `Buffer2` trait (wraps `RefCell<VecDeque<InferredTransaction>>`; write_batch appends all; returns BufferError::Full when over capacity; #[must_use] new) in `crates/fraud_detection/src/adapters/in_memory_buffer2.rs`
+- [X] T034 [P] Create `DemoModelizer` struct implementing `Modelizer` trait (marks all transactions fraudulent or legitimate per config bool; populates model_name="DINN", model_version="v1"; initializes current_version=ModelVersion::N (FR-009); logs infer and switch_version calls) in `crates/fraud_detection/src/adapters/demo_modelizer.rs`
+- [X] T035 [P] Create `LogAlarm` struct implementing `Alarm` trait (logs fraud alert via `log::warn!` with transaction id; returns Ok(()); #[must_use] new) in `crates/fraud_detection/src/adapters/log_alarm.rs`
+- [X] T036 Update `crates/fraud_detection/src/adapters/mod.rs` to declare `in_memory_buffer2`, `demo_modelizer`, and `log_alarm` submodules (pub use types)
+- [X] T037 [P] Add `consumer` workspace dependency to `crates/fraud_detection/Cargo.toml`
+- [X] T038 Update `crates/fraud_detection/src/main.rs` to construct `ConsumerConfig`, `Consumer`, and call `consumer.run` with `&in_memory_buffer` (Buffer1Read), `&demo_modelizer`, `&log_alarm`, `&in_memory_buffer2`; `run` returns `Result<(), ConsumerError>` -- alarm errors are logged inside `run` per-iteration when `consume_once` returns `Ok(alarm_errors)` with non-empty vec; `main.rs` only handles the outer `Result`
 
 **Checkpoint**: `cargo build --release` succeeds; full pipeline runs end-to-end
 
@@ -188,9 +188,9 @@ MockModelizer.last_version == NMinus1.
 
 ## Phase 9: Polish and Cross-Cutting Concerns
 
-- [ ] T039 Run `cargo test --workspace` and fix any failing tests
-- [ ] T040 Run `cargo clippy --workspace --all-targets` and fix all lint warnings (check #[must_use], doc comment format < 15 words summary, Ref<'_> lifetimes, #[expect] not #[allow])
-- [ ] T041 Add compliance comment `// Rust guideline compliant 2026-02-22` to `crates/consumer/src/lib.rs` and new adapter files; verify quickstart.md build/run steps execute successfully
+- [X] T039 Run `cargo test --workspace` and fix any failing tests
+- [X] T040 Run `cargo clippy --workspace --all-targets` and fix all lint warnings (check #[must_use], doc comment format < 15 words summary, Ref<'_> lifetimes, #[expect] not #[allow])
+- [X] T041 Add compliance comment `// Rust guideline compliant 2026-02-22` to `crates/consumer/src/lib.rs` and new adapter files; verify quickstart.md build/run steps execute successfully
 
 ---
 

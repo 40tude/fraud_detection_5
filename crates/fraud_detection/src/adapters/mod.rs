@@ -1,4 +1,4 @@
-// Rust guideline compliant 2026-02-16
+// Rust guideline compliant 2026-02-23
 
 //! Adapters (secondary ports) for the fraud-detection binary.
 //!
@@ -6,4 +6,7 @@
 //! `domain` crate. Adapters are intentionally isolated from domain and producer
 //! logic.
 
+pub mod demo_modelizer;
 pub mod in_memory_buffer;
+pub mod in_memory_buffer2;
+pub mod log_alarm;
