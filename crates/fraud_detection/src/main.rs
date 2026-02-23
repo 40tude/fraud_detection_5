@@ -2,9 +2,9 @@
 
 //! Fraud-detection pipeline entry point.
 //!
-//! Wires all pipeline components (Producer, Consumer, Modelizer) to their
-//! concurrent-buffer and DEMO adapters and runs a proof-of-concept concurrent
-//! end-to-end pipeline.
+//! Wires all pipeline components (Producer, Consumer, Modelizer, Logger) to their
+//! concurrent-buffer, storage, and DEMO adapters and runs a proof-of-concept
+//! concurrent end-to-end pipeline.
 //!
 //! # Usage
 //!
@@ -19,11 +19,13 @@
 mod adapters;
 
 use adapters::concurrent_buffer::ConcurrentBuffer;
+use adapters::concurrent_buffer2::ConcurrentBuffer2;
 use adapters::demo_model::DemoModel;
-use adapters::in_memory_buffer2::InMemoryBuffer2;
+use adapters::in_memory_storage::InMemoryStorage;
 use adapters::log_alarm::LogAlarm;
 use anyhow::Context as _;
 use consumer::{Consumer, ConsumerConfig};
+use logger::{Logger, LoggerConfig};
 use modelizer::Modelizer;
 use producer::{Producer, ProducerConfig};
 use std::time::Duration;
@@ -36,7 +38,7 @@ async fn main() -> anyhow::Result<()> {
     // -- Producer: infinite mode by default; press CTRL+C to stop --
     // Set .iterations(10) here for a finite demo run.
     let producer_config = ProducerConfig::builder(100)
-        // 50 ms between batches keeps logs readable in real time.
+        // 500 ms between batches keeps logs readable in real time.
         .speed1(Duration::from_millis(500))
         // .iterations(10)
         .build()
@@ -53,36 +55,56 @@ async fn main() -> anyhow::Result<()> {
         .build()
         .context("failed to build consumer config")?;
 
-    // Generous capacity: enough for continuous concurrent operation.
-    let buffer2 = InMemoryBuffer2::new(2_000);
+    // ConcurrentBuffer2: shared by Consumer (write) and Logger (read).
+    let buffer2 = ConcurrentBuffer2::new();
     // DEMO model: OS-seeded RNG, starts at version N (version 4, ~4% fraud rate).
     let model = DemoModel::new(None);
     let modelizer = Modelizer::new(model);
     let alarm = LogAlarm::new();
     let consumer = Consumer::new(consumer_config);
 
-    // Wrap the concurrent pair in one async block (FR-001, FR-002, Decision 3).
-    // Finite-mode: producer.run completes -> close() -> consumer drains -> join resolves.
+    // -- Logger: drain Buffer2 -> InMemoryStorage --
+    let logger_config = LoggerConfig::builder(10)
+        // 25 ms matches Consumer cadence.
+        .speed3(Duration::from_millis(25))
+        .build()
+        .context("failed to build logger config")?;
+
+    // usize::MAX capacity: effectively unbounded for proof-of-concept.
+    let storage = InMemoryStorage::new(usize::MAX);
+    let logger = Logger::new(logger_config);
+
+    // Shutdown cascade: Consumer.run completes -> buffer2.close() -> Logger drains+stops.
+    // On CTRL+C, only buffer1.close() is needed; buffer2 cascade follows automatically.
+    let consumer_then_close = async {
+        let r = consumer.run(&buffer1, &modelizer, &alarm, &buffer2).await;
+        // Close buffer2 so Logger exits cleanly after draining (cascade shutdown).
+        buffer2.close();
+        r
+    };
+
     let pipeline = async {
-        // tokio::join! polls both futures concurrently and returns the tuple directly.
-        let (p, c) = tokio::join!(
+        // tokio::join! polls all three futures concurrently and returns the tuple directly.
+        let (p, c, l) = tokio::join!(
             async {
                 let r = producer.run(&buffer1).await;
-                // Close buffer so Consumer exits cleanly after draining (FR-005).
+                // Close buffer1 so Consumer exits cleanly after draining.
                 buffer1.close();
                 r
             },
-            consumer.run(&buffer1, &modelizer, &alarm, &buffer2)
+            consumer_then_close,
+            logger.run(&buffer2, &storage)
         );
         p.context("producer failed")
             .and(c.context("consumer failed"))
+            .and(l.context("logger failed"))
     };
 
-    // Race the pipeline against CTRL+C (FR-004, Decision 4).
-    // CTRL+C: close buffer, cancel both tasks, exit cleanly (SC-002).
+    // Race the pipeline against CTRL+C.
+    // CTRL+C: close buffer1 only; buffer2 cascade follows from consumer_then_close.
     tokio::select! {
         _ = tokio::signal::ctrl_c() => {
-            log::info!("main.shutdown: ctrl_c received, closing buffer");
+            log::info!("main.shutdown: ctrl_c received, closing buffers");
             buffer1.close();
         }
         result = pipeline => {

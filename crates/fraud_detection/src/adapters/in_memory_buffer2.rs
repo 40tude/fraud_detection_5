@@ -25,6 +25,7 @@ pub struct InMemoryBuffer2 {
 impl InMemoryBuffer2 {
     /// Create an empty buffer with the given `capacity`.
     #[must_use]
+    #[expect(dead_code, reason = "test-only adapter; replaced by ConcurrentBuffer2 in binary")]
     pub fn new(capacity: usize) -> Self {
         Self { inner: RefCell::new(VecDeque::new()), capacity }
     }
