@@ -20,6 +20,14 @@
     - .specify/templates/checklist-template.md: OK (generic)
     - .specify/templates/agent-file-template.md: OK (generic)
   Follow-up TODOs: None
+
+  Version change: 1.0.0 -> 1.0.1 (patch: clarifications, 2026-02-23)
+  Modified sections:
+    - Model Versions: removed hardcoded ~5%/~8% rates (contradicted DEMO spec 4%/3%);
+      replaced with adapter-defined rates; fixed "N-1: Improved detection" label
+    - Pipeline table: Modelizer row field names model/version -> model_name/model_version
+  Templates requiring updates: None (patch-level only)
+  Follow-up TODOs: None
 -->
 
 # Fraud Detection Pipeline Constitution
@@ -96,7 +104,7 @@ asynchronous. Each stage operates at its own speed.
 |------------|---------------------|---------------------|-------------------------------------------|
 | Producer   | None                | Buffer1             | Generates batches of transactions at speed1 |
 | Consumer   | Buffer1             | Modelizer           | Read batches of transaction at speed2                |
-| Modelizer  | Consumer            | Consumer            | Infer and add fields `predicted_fraud`, `model` and `version` to each transaction. Model version (N, N-1) is selectable |
+| Modelizer  | Consumer            | Consumer            | Infer and add fields `predicted_fraud`, `model_name` and `model_version` to each transaction. Model version (N, N-1) is selectable |
 | Consumer   | Modelizer           | Buffer2 + Alert     | Forwards batches of inferred transactions at speed2     |
 | Logger     | Buffer2             | Storage             | Add a field `prediction_confirmed` to the inferred transactions, set it to `False` then persists the batch to Storage |
 
@@ -115,9 +123,9 @@ After inference it additionally carries: `predicted_fraud` (T|F), `model_name` a
 
 ### Model Versions
 
-- **N**: Detects fraudulent transactions ~5% of the time for one class and ~8% for another. Baseline for benchmarking.
-- **N-1**: Improved detection (specifics defined at implementation time).
-- Consumer selects which version to use; default is latest available.
+- **N**: Latest model version (default). Fraud detection rate is adapter-defined (e.g., DEMO: ~4%).
+- **N-1**: Previous model version. Fraud detection rate is adapter-defined (e.g., DEMO: ~3%).
+- Consumer selects which version to use; default is N (latest).
 
 ## Development Workflow
 
@@ -143,4 +151,4 @@ After inference it additionally carries: `predicted_fraud` (T|F), `model_name` a
 - Complexity MUST be justified; if a simpler alternative exists and
   meets the pedagogical goal, use it.
 
-**Version**: 1.0.0 | **Ratified**: 2026-02-21 | **Last Amended**: 2026-02-21
+**Version**: 1.0.1 | **Ratified**: 2026-02-21 | **Last Amended**: 2026-02-23

@@ -2,8 +2,8 @@
 
 //! Fraud-detection pipeline entry point.
 //!
-//! Wires all pipeline components (Producer, Consumer) to their in-memory and
-//! demo adapters and runs a proof-of-concept end-to-end pipeline.
+//! Wires all pipeline components (Producer, Consumer, Modelizer) to their
+//! in-memory and DEMO adapters and runs a proof-of-concept end-to-end pipeline.
 //!
 //! # Usage
 //!
@@ -17,12 +17,13 @@
 
 mod adapters;
 
-use adapters::demo_modelizer::DemoModelizer;
+use adapters::demo_model::DemoModel;
 use adapters::in_memory_buffer::InMemoryBuffer;
 use adapters::in_memory_buffer2::InMemoryBuffer2;
 use adapters::log_alarm::LogAlarm;
 use anyhow::Context as _;
 use consumer::{Consumer, ConsumerConfig};
+use modelizer::Modelizer;
 use producer::{Producer, ProducerConfig};
 use std::time::Duration;
 
@@ -50,7 +51,7 @@ async fn main() -> anyhow::Result<()> {
 
     log::info!("producer.run.complete");
 
-    // -- Consumer: drain Buffer1 -> Modelizer -> Buffer2 --
+    // -- Consumer: drain Buffer1 -> Modelizer<DemoModel> -> Buffer2 --
     let consumer_config = ConsumerConfig::builder(200)
         // No delay in demo: drain the pre-filled Buffer1 as fast as possible.
         .speed2(Duration::ZERO)
@@ -59,8 +60,9 @@ async fn main() -> anyhow::Result<()> {
 
     // Generous capacity: 10 batches * 100 max tx = up to 1000 transactions.
     let buffer2 = InMemoryBuffer2::new(2_000);
-    // Demo modelizer: all transactions classified as legitimate (no fraud alarms).
-    let modelizer = DemoModelizer::new(false);
+    // DEMO model: OS-seeded RNG, starts at version N (version 4, ~4% fraud rate).
+    let model = DemoModel::new(None);
+    let modelizer = Modelizer::new(model);
     let alarm = LogAlarm::new();
     let consumer = Consumer::new(consumer_config);
 

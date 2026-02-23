@@ -1,0 +1,15 @@
+[package]
+name    = "modelizer"
+version = "0.1.0"
+edition = "2024"
+
+[lints]
+workspace = true
+
+[dependencies]
+domain = { path = "../domain" }
+log    = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true }
+uuid  = { workspace = true }

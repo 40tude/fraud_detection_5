@@ -3,7 +3,7 @@
 //! Shared domain types for the fraud-detection pipeline.
 //!
 //! Defines `Transaction`, `BufferError`, and the hexagonal port traits:
-//! `Buffer1`, `Buffer1Read`, `Buffer2`, `Modelizer`, and `Alarm`.
+//! `Buffer1`, `Buffer1Read`, `Buffer2`, `Model`, `Modelizer`, and `Alarm`.
 //! All pipeline components depend on this crate; no other crate is imported here.
 
 /// A single banking transaction produced by the pipeline.
@@ -139,6 +139,38 @@ pub trait Buffer2 {
     /// Returns `BufferError::Full` when capacity is exceeded, or
     /// `BufferError::Closed` when the buffer has been shut down.
     async fn write_batch(&self, batch: Vec<InferredTransaction>) -> Result<(), BufferError>;
+}
+
+/// Hexagonal port: per-transaction classification model.
+///
+/// Implemented by concrete model adapters (e.g. `DemoModel`). The Modelizer
+/// component depends exclusively on this trait -- never on a concrete adapter.
+/// Adapters are responsible for mapping abstract `ModelVersion` to their own
+/// concrete version identifiers.
+#[expect(
+    async_fn_in_trait,
+    reason = "no dyn dispatch needed; internal workspace only"
+)]
+pub trait Model {
+    /// Classify a single transaction as fraudulent or legitimate.
+    ///
+    /// # Errors
+    ///
+    /// Returns `ModelizerError::InferenceFailed` if classification fails.
+    async fn classify(&self, tx: &Transaction) -> Result<bool, ModelizerError>;
+
+    /// Name of this model (e.g. `"DEMO"`).
+    fn name(&self) -> &str;
+
+    /// Version string for the currently active version (e.g. `"4"`).
+    fn active_version(&self) -> &str;
+
+    /// Switch to a different model version; takes effect on the next `classify` call.
+    ///
+    /// # Errors
+    ///
+    /// Returns `ModelizerError::SwitchFailed` if the switch cannot be applied.
+    async fn switch_version(&self, version: ModelVersion) -> Result<(), ModelizerError>;
 }
 
 /// Hexagonal port: inference and version-switching for transaction classification.
@@ -288,6 +320,46 @@ mod tests {
     fn alarm_error_variants() {
         let e = AlarmError::DeliveryFailed { reason: "timeout".to_owned() };
         assert_eq!(e.to_string(), "delivery failed: timeout");
+    }
+
+    // ------------------------------------------------------------------
+    // T004: Model trait -- compile check
+    // ------------------------------------------------------------------
+
+    /// Verify that a minimal `Model` implementation compiles and satisfies all methods.
+    #[tokio::test]
+    async fn model_trait_compiles_with_minimal_impl() {
+        struct MinimalModel;
+
+        impl Model for MinimalModel {
+            async fn classify(&self, _tx: &Transaction) -> Result<bool, ModelizerError> {
+                Ok(false)
+            }
+
+            fn name(&self) -> &str {
+                "minimal"
+            }
+
+            fn active_version(&self) -> &str {
+                "0"
+            }
+
+            async fn switch_version(&self, _version: ModelVersion) -> Result<(), ModelizerError> {
+                Ok(())
+            }
+        }
+
+        let m = MinimalModel;
+        let tx = Transaction {
+            id: uuid::Uuid::new_v4(),
+            amount: 1.00_f64,
+            last_name: "T".to_owned(),
+        };
+        let fraud = m.classify(&tx).await.unwrap();
+        assert!(!fraud);
+        assert_eq!(m.name(), "minimal");
+        assert_eq!(m.active_version(), "0");
+        m.switch_version(ModelVersion::N).await.unwrap();
     }
 
     /// Verify that all four new AFIT port traits compile with a minimal implementation.
