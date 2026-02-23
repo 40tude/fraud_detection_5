@@ -92,6 +92,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b05b61dc5112cbb17e4b6cd61790d9845d13888356391624cbe7e41efeac1e75"
 
 [[package]]
+name = "consumer"
+version = "0.1.0"
+dependencies = [
+ "domain",
+ "log",
+ "rand",
+ "thiserror",
+ "tokio",
+ "uuid",
+]
+
+[[package]]
 name = "domain"
 version = "0.1.0"
 dependencies = [
@@ -141,6 +153,7 @@ name = "fraud_detection"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "consumer",
  "domain",
  "env_logger",
  "log",

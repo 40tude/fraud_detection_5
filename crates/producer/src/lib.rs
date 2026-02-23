@@ -323,9 +323,10 @@ mod tests {
         for _ in 0..100 {
             let batch = producer.generate_batch();
             let sz = batch.len();
-            assert!(sz >= 1 && sz <= 10, "batch size {sz} out of [1, 10]");
+            assert!((1..=10).contains(&sz), "batch size {sz} out of [1, 10]");
             seen[sz] = true;
         }
+        #[expect(clippy::needless_range_loop, reason = "index 0 is intentionally skipped")]
         for i in 1..=10 {
             assert!(seen[i], "size {i} never appeared in 100 batches");
         }
@@ -376,7 +377,7 @@ mod tests {
 
         assert_eq!(buffer.batch_count(), 1);
         let sz = buffer.total_tx_count();
-        assert!(sz >= 1 && sz <= 10, "batch size {sz} out of [1, 10]");
+        assert!((1..=10).contains(&sz), "batch size {sz} out of [1, 10]");
     }
 
     // ------------------------------------------------------------------
@@ -399,7 +400,7 @@ mod tests {
         assert_eq!(buffer.batch_count(), 5, "expected exactly 5 batches");
         let total = buffer.total_tx_count();
         // 5 batches, each 1..=10 transactions
-        assert!(total >= 5 && total <= 50, "total tx count {total} out of expected range");
+        assert!((5..=50).contains(&total), "total tx count {total} out of expected range");
     }
 
     #[tokio::test]
