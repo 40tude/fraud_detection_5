@@ -52,7 +52,7 @@ async fn main() -> anyhow::Result<()> {
     log::info!("producer.run.complete");
 
     // -- Consumer: drain Buffer1 -> Modelizer<DemoModel> -> Buffer2 --
-    let consumer_config = ConsumerConfig::builder(200)
+    let consumer_config = ConsumerConfig::builder(50)
         // No delay in demo: drain the pre-filled Buffer1 as fast as possible.
         .speed2(Duration::ZERO)
         .build()
