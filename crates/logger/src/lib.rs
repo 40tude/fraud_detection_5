@@ -1,4 +1,4 @@
-// Rust guideline compliant 2026-02-23
+// Rust guideline compliant 2026-02-24
 
 //! Logger crate: reads InferredTransaction batches from Buffer2, persists as PendingTransaction.
 //!
@@ -154,7 +154,7 @@ impl Logger {
     ///
     /// Batch size `n3` is uniformly distributed in `[1, config.n3_max]`.
     /// Each `InferredTransaction` becomes a `PendingTransaction` with
-    /// `prediction_confirmed = false`.
+    /// `is_reviewed = false` and `actual_fraud = None`.
     ///
     /// # Errors
     ///
@@ -170,7 +170,7 @@ impl Logger {
         let batch: Vec<InferredTransaction> = buf2.read_batch(n3).await?;
         let pending: Vec<PendingTransaction> = batch
             .into_iter()
-            .map(|tx| PendingTransaction { inferred_transaction: tx, prediction_confirmed: false })
+            .map(|tx| PendingTransaction { inferred_transaction: tx, is_reviewed: false, actual_fraud: None })
             .collect();
         storage.write_batch(pending).await?;
         Ok(())
@@ -419,7 +419,8 @@ mod tests {
         assert_eq!(stored.len(), 5);
         for (i, pt) in stored.iter().enumerate() {
             assert_eq!(pt.inferred_transaction, orig_clone[i]);
-            assert!(!pt.prediction_confirmed);
+            assert!(!pt.is_reviewed);
+            assert!(pt.actual_fraud.is_none());
         }
     }
 
@@ -438,7 +439,8 @@ mod tests {
         let stored = storage.items.borrow();
         assert_eq!(stored.len(), 1);
         assert!(stored[0].inferred_transaction.predicted_fraud);
-        assert!(!stored[0].prediction_confirmed);
+        assert!(!stored[0].is_reviewed);
+        assert!(stored[0].actual_fraud.is_none());
     }
 
     // ------------------------------------------------------------------
@@ -456,7 +458,8 @@ mod tests {
         let stored = storage.items.borrow();
         assert_eq!(stored.len(), 1);
         assert!(!stored[0].inferred_transaction.predicted_fraud);
-        assert!(!stored[0].prediction_confirmed);
+        assert!(!stored[0].is_reviewed);
+        assert!(stored[0].actual_fraud.is_none());
     }
 
     // ------------------------------------------------------------------

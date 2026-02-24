@@ -156,7 +156,7 @@ another from making progress.
 | Consumer   | Buffer1             | Modelizer           | Read batches of transaction at speed2                |
 | Modelizer  | Consumer            | Consumer            | Infer and add fields `predicted_fraud`, `model_name` and `model_version` to each transaction. Model version (N, N-1) is selectable |
 | Consumer   | Modelizer           | Buffer2 + Alert     | Forwards batches of inferred transactions at speed2     |
-| Logger     | Buffer2             | Storage             | Add a field `prediction_confirmed` to the inferred transactions, set it to `False` then persists the batch to Storage |
+| Logger     | Buffer2             | Storage             | Add fields `is_reviewed` (bool, false) and `actual_fraud` (Option<bool>, None) to the inferred transactions then persists the batch to Storage |
 
 ### Buffers and Storage
 

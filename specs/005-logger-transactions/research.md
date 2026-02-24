@@ -38,19 +38,21 @@ pub trait Storage {
 
 ## R3: PendingTransaction Composition
 
-**Decision**: Composition struct wrapping `InferredTransaction` + `prediction_confirmed: bool`.
+**Decision**: Composition struct wrapping `InferredTransaction` + `is_reviewed: bool` + `actual_fraud: Option<bool>`.
 
-**Rationale**: Follows the nesting chain `Transaction -> InferredTransaction -> PendingTransaction` established in the spec. Consistent with `InferredTransaction { transaction: Transaction, ... }`.
+**Rationale**: Follows the nesting chain `Transaction -> InferredTransaction -> PendingTransaction` established in the spec. Consistent with `InferredTransaction { transaction: Transaction, ... }`. `is_reviewed` tracks whether a human has examined the record; `actual_fraud: Option<bool>` encodes the ground-truth label (None = not yet reviewed, Some(true/false) = confirmed outcome). `Option<bool>` maps naturally to a nullable BOOLEAN column in SQL databases.
 
 **Alternatives considered**:
 - Flat struct copying all fields: rejected -- violates DRY, harder to maintain, loses the composition pattern established for `InferredTransaction`.
 - Generic enrichment wrapper `Enriched<T, Extra>`: over-engineering for a didactic project.
+- Two booleans (`is_reviewed`, `is_fraud`): rejected -- `is_fraud` is semantically undefined when `is_reviewed = false`.
 
 **Type**:
 ```rust
 pub struct PendingTransaction {
     pub inferred_transaction: InferredTransaction,
-    pub prediction_confirmed: bool,
+    pub is_reviewed: bool,
+    pub actual_fraud: Option<bool>,
 }
 ```
 

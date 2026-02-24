@@ -11,7 +11,8 @@ A transaction awaiting full verification. Wraps an `InferredTransaction` with a 
 | Field | Type | Description | Default |
 |-------|------|-------------|---------|
 | `inferred_transaction` | `InferredTransaction` | Composition: original inferred transaction | (from input) |
-| `prediction_confirmed` | `bool` | Whether fraud prediction has been fully verified | `false` |
+| `is_reviewed` | `bool` | Whether a human reviewer has examined this transaction | `false` |
+| `actual_fraud` | `Option<bool>` | Ground-truth fraud label: `None` until reviewed, `Some(true/false)` after | `None` |
 
 **Derives**: `Debug`, `Clone`, `PartialEq`
 **Convenience method**: `id() -> uuid::Uuid` (delegates through `inferred_transaction.id()`)
@@ -27,7 +28,8 @@ PendingTransaction
   |     +-- predicted_fraud: bool
   |     +-- model_name: String
   |     +-- model_version: ModelVersion
-  +-- prediction_confirmed: bool
+  +-- is_reviewed: bool
+  +-- actual_fraud: Option<bool>
 ```
 
 ### StorageError (NEW)
@@ -125,7 +127,7 @@ Implements `Storage`. Backed by `RefCell<Vec<PendingTransaction>>` with optional
 ## State Transitions
 
 ```
-InferredTransaction --(Logger.log_once)--> PendingTransaction { prediction_confirmed: false }
+InferredTransaction --(Logger.log_once)--> PendingTransaction { is_reviewed: false, actual_fraud: None }
 ```
 
-No other state transitions in scope. `prediction_confirmed` update is deferred to a future feature.
+No other state transitions in scope. `is_reviewed` and `actual_fraud` are updated by an external review process (future feature).

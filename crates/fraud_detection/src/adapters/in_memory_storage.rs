@@ -1,4 +1,4 @@
-// Rust guideline compliant 2026-02-23
+// Rust guideline compliant 2026-02-24
 
 //! In-memory adapter for the `Storage` port.
 //!
@@ -82,7 +82,8 @@ mod tests {
                 model_name: "DEMO".to_owned(),
                 model_version: "4".to_owned(),
             },
-            prediction_confirmed: false,
+            is_reviewed: false,
+            actual_fraud: None,
         }
     }
 

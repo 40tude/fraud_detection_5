@@ -1,4 +1,4 @@
-// Rust guideline compliant 2026-02-23
+// Rust guideline compliant 2026-02-24
 
 //! Shared domain types for the fraud-detection pipeline.
 //!
@@ -43,8 +43,15 @@ impl InferredTransaction {
 pub struct PendingTransaction {
     /// Original inferred transaction (composition).
     pub inferred_transaction: InferredTransaction,
-    /// Whether the fraud prediction has been fully verified.
-    pub prediction_confirmed: bool,
+    /// Whether a human reviewer has examined this transaction.
+    ///
+    /// `false` on creation; set to `true` after manual review.
+    pub is_reviewed: bool,
+    /// Ground-truth fraud label assigned by the reviewer.
+    ///
+    /// `None` until reviewed; `Some(true)` = confirmed fraud,
+    /// `Some(false)` = confirmed legitimate. Used to build ML training sets.
+    pub actual_fraud: Option<bool>,
 }
 
 impl PendingTransaction {
@@ -445,11 +452,13 @@ mod tests {
         };
         let pending = PendingTransaction {
             inferred_transaction: inferred.clone(),
-            prediction_confirmed: false,
+            is_reviewed: false,
+            actual_fraud: None,
         };
         // id() delegates through inferred_transaction.id().
         assert_eq!(pending.id(), id);
-        assert!(!pending.prediction_confirmed);
+        assert!(!pending.is_reviewed);
+        assert!(pending.actual_fraud.is_none());
         assert_eq!(pending.inferred_transaction, inferred);
     }
 
@@ -463,7 +472,7 @@ mod tests {
             model_name: "M".to_owned(),
             model_version: "1".to_owned(),
         };
-        let p1 = PendingTransaction { inferred_transaction: inferred, prediction_confirmed: false };
+        let p1 = PendingTransaction { inferred_transaction: inferred, is_reviewed: false, actual_fraud: None };
         let p2 = p1.clone();
         assert_eq!(p1, p2);
     }

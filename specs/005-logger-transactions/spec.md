@@ -34,17 +34,17 @@ The Logger reads variable-size batches of inferred transactions from Buffer2. Ea
 
 ### User Story 2 - Transform to PendingTransaction (Priority: P1)
 
-After reading a batch of inferred transactions from Buffer2, the Logger converts each one into a pending transaction by adding a `prediction_confirmed` field set to false. All original fields from the inferred transaction are preserved. The `prediction_confirmed` field will be updated later by an external verification process (out of scope for this feature).
+After reading a batch of inferred transactions from Buffer2, the Logger converts each one into a pending transaction by adding `is_reviewed = false` and `actual_fraud = None`. All original fields from the inferred transaction are preserved. `is_reviewed` and `actual_fraud` are updated later by an external review process (out of scope for this feature).
 
 **Why this priority**: This transformation is the core business logic of the Logger. Without it, inferred transactions cannot be persisted in the correct format for downstream verification.
 
-**Independent Test**: Can be tested by providing a batch of inferred transactions and verifying each resulting pending transaction carries all original fields plus `prediction_confirmed = false`.
+**Independent Test**: Can be tested by providing a batch of inferred transactions and verifying each resulting pending transaction carries all original fields plus `is_reviewed = false` and `actual_fraud = None`.
 
 **Acceptance Scenarios**:
 
-1. **Given** a batch of 5 inferred transactions, **When** Logger transforms them, **Then** 5 pending transactions are produced, each with `prediction_confirmed = false` and all original fields intact.
-2. **Given** an inferred transaction with `predicted_fraud = true`, **When** Logger transforms it, **Then** the pending transaction retains `predicted_fraud = true` and has `prediction_confirmed = false`.
-3. **Given** an inferred transaction with `predicted_fraud = false`, **When** Logger transforms it, **Then** the pending transaction retains `predicted_fraud = false` and has `prediction_confirmed = false`.
+1. **Given** a batch of 5 inferred transactions, **When** Logger transforms them, **Then** 5 pending transactions are produced, each with `is_reviewed = false`, `actual_fraud = None`, and all original fields intact.
+2. **Given** an inferred transaction with `predicted_fraud = true`, **When** Logger transforms it, **Then** the pending transaction retains `predicted_fraud = true` and has `is_reviewed = false`, `actual_fraud = None`.
+3. **Given** an inferred transaction with `predicted_fraud = false`, **When** Logger transforms it, **Then** the pending transaction retains `predicted_fraud = false` and has `is_reviewed = false`, `actual_fraud = None`.
 
 ---
 
@@ -98,7 +98,7 @@ The Logger runs as a continuous async loop: read batch, transform, persist, wait
 - **FR-001**: Logger MUST read batches from Buffer2 through a hexagonal port (read trait), with no dependency on Buffer2 implementation.
 - **FR-002**: Logger MUST vary batch size N3 randomly in [1, N3_MAX] at each iteration.
 - **FR-003**: Logger MUST accept N3_MAX as configuration (minimum value: 1).
-- **FR-004**: Logger MUST create one pending transaction per inferred transaction, setting `prediction_confirmed` to false.
+- **FR-004**: Logger MUST create one pending transaction per inferred transaction, setting `is_reviewed = false` and `actual_fraud = None`.
 - **FR-005**: Logger MUST preserve all fields from the source inferred transaction in the resulting pending transaction (id, amount, last_name, predicted_fraud, model_name, model_version).
 - **FR-006**: Logger MUST write each batch of pending transactions to Storage through a hexagonal port (storage trait), with no dependency on Storage implementation.
 - **FR-007**: Logger MUST operate at speed3, defined as a configurable delay (duration) between processing iterations.
@@ -109,7 +109,7 @@ The Logger runs as a continuous async loop: read batch, transform, persist, wait
 
 ### Key Entities
 
-- **PendingTransaction**: Composition struct wrapping `InferredTransaction` plus `prediction_confirmed: bool` (initially false). Follows the same nesting pattern as `InferredTransaction { transaction: Transaction, ... }`. Represents a transaction awaiting full verification.
+- **PendingTransaction**: Composition struct wrapping `InferredTransaction` plus `is_reviewed: bool` (initially false) and `actual_fraud: Option<bool>` (initially None). Follows the same nesting pattern as `InferredTransaction { transaction: Transaction, ... }`. Represents a transaction awaiting human review and ground-truth labeling.
 - **Buffer2Read**: Hexagonal port for reading batches of inferred transactions from the second buffer. Symmetric to Buffer1Read.
 - **Storage**: Hexagonal port for writing batches of pending transactions to a persistent store. The Logger depends exclusively on this trait. Returns `StorageError` (not `BufferError`) with variants `CapacityExceeded` and `Unavailable`.
 - **StorageError**: Dedicated error enum for the Storage port. Variants: `CapacityExceeded { capacity: usize }` (store is full), `Unavailable` (store is closed/unreachable). Distinct from `BufferError` to reinforce the conceptual boundary between buffers and storage.
@@ -120,7 +120,7 @@ The Logger runs as a continuous async loop: read batch, transform, persist, wait
 ### Measurable Outcomes
 
 - **SC-001**: Logger processes batches with variable sizes correctly, verified by the full range [1, N3_MAX] being exercised over multiple iterations.
-- **SC-002**: 100% of inferred transactions read from Buffer2 are converted to pending transactions with `prediction_confirmed = false`.
+- **SC-002**: 100% of inferred transactions read from Buffer2 are converted to pending transactions with `is_reviewed = false` and `actual_fraud = None`.
 - **SC-003**: All pending transactions in each batch are persisted to Storage after transformation.
 - **SC-004**: Logger stops within one iteration after Buffer2 signals closed and is drained.
 - **SC-005**: Both hexagonal ports (Buffer2Read, Storage) are swappable without modifying Logger domain logic.
@@ -131,7 +131,7 @@ The Logger runs as a continuous async loop: read batch, transform, persist, wait
 - **speed3** follows the same pattern as Producer's speed1 and Consumer's speed2: a configurable async delay (duration) inserted between processing iterations.
 - **Buffer2Read** is a new trait in the domain crate, symmetric to Buffer1Read, returning batches of `InferredTransaction`.
 - **Storage** is a new trait in the domain crate for writing batches of `PendingTransaction`. It uses a dedicated `StorageError` enum (`CapacityExceeded`, `Unavailable`) rather than reusing `BufferError`.
-- **PendingTransaction** is a new domain type in the domain crate using composition: `PendingTransaction { inferred_transaction: InferredTransaction, prediction_confirmed: bool }`.
+- **PendingTransaction** is a new domain type in the domain crate using composition: `PendingTransaction { inferred_transaction: InferredTransaction, is_reviewed: bool, actual_fraud: Option<bool> }`.
 - **Error handling**: Buffer2 and Storage errors propagate immediately. No retry logic in the Logger.
 - **Logger crate** is a new library crate in the workspace, following the same structure as producer and consumer crates.
 - **Iteration logging** uses the `log` facade crate at debug level, consistent with other pipeline components.
