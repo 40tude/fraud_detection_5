@@ -3,6 +3,8 @@ temp/
 docs/
 .env*
 .claude/settings.local.json
+fraud_detection.db
+
 # Rust
 *.rs.bk
 *.rlib

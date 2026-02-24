@@ -47,8 +47,8 @@ cargo build --release
 ## Usage
 
 ```bash
-$env:RUST_LOG='info'; cargo run; Remove-Item env:RUST_LOG
-cargo run
+$env:RUST_LOG='info'; cargo run --bin fraud_detection; Remove-Item env:RUST_LOG
+cargo run --bin fraud_detection
 # CTRL + C to stop
 
 
