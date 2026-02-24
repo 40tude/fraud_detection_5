@@ -16,8 +16,9 @@
     - On return, for each fraudulent inferred_transaction an alarm is sent
     - inferred_transaction are written in Buffer2
     - Logger extract inferred_transaction and writes pending_transaction in Storage
-        - pending_transaction is a inferred_transaction + prediction_confirmed field which will be set once the transaction will be checked
-        - doing so, Storage's content can be used to train a ML model with recent data
+        - pending_transaction is a inferred_transaction + is_reviewed + actual_fraud
+        - the fields will be set once the transaction will be checked
+        - Storage's content can be used to train a ML model with recent data
 - Extractions and Writes operate on batches of transactions
     - Batches size vary
     - Speeds are all different
@@ -48,6 +49,11 @@ cargo build --release
 ```bash
 $env:RUST_LOG='info'; cargo run; Remove-Item env:RUST_LOG
 cargo run
+# CTRL + C to stop
+
+
+$env:RUST_LOG='info'; cargo run --bin fraud_detection_sqlite; Remove-Item env:RUST_LOG
+# fraud_detection.db created in current directory; rows visible in any SQLite browser
 # CTRL + C to stop
 
 ```

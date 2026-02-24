@@ -16,6 +16,10 @@ use domain::{PendingTransaction, Storage, StorageError};
 /// Pending transactions written via [`Storage::write_batch`] are appended to
 /// an internal vector. Returns [`StorageError::CapacityExceeded`] when
 /// `current_count + batch_size` exceeds `capacity`.
+// #[allow] not #[expect]: dead_code fires in fraud_detection_sqlite binary but
+// NOT in fraud_detection binary, so #[expect] would generate an unfulfilled-
+// expectation warning in one of the two binaries.
+#[allow(dead_code, reason = "used by fraud_detection binary; dead in fraud_detection_sqlite")]
 #[derive(Debug)]
 pub struct InMemoryStorage {
     inner: RefCell<Vec<PendingTransaction>>,
@@ -25,6 +29,8 @@ pub struct InMemoryStorage {
 
 impl InMemoryStorage {
     /// Create an empty storage with the given `capacity`.
+    // See struct-level allow(dead_code) comment above.
+    #[allow(dead_code, reason = "used by fraud_detection binary; dead in fraud_detection_sqlite")]
     #[must_use]
     pub fn new(capacity: usize) -> Self {
         Self { inner: RefCell::new(vec![]), capacity }
