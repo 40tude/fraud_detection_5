@@ -130,7 +130,7 @@
 - [X] T035 [P] Add `log::debug!` to `Modelizer::infer` (batch size) and `log::info!` to `Modelizer::switch_version` (new version) in `crates/modelizer/src/lib.rs`
 - [X] T036 [P] Add `log::debug!` to `DemoModel::classify` (fraud decision) and `log::info!` to `DemoModel::switch_version` (version change) in `crates/fraud_detection/src/adapters/demo_model.rs`
 - [X] T037 Update `crates/fraud_detection/src/main.rs`: remove `DemoModelizer` import; add `use adapters::demo_model::DemoModel;` and `use modelizer::Modelizer;`; replace `DemoModelizer::new(false)` with `Modelizer::new(DemoModel::new(None))`
-- [X] T038 Add `// Rust guideline compliant 2026-02-23` compliance comment to all new/modified `.rs` files (`crates/modelizer/src/lib.rs`, `crates/domain/src/lib.rs`, `crates/fraud_detection/src/adapters/demo_model.rs`, `crates/fraud_detection/src/adapters/mod.rs`, `crates/fraud_detection/src/main.rs`)
+- [X] T038 Add `// Rust guideline compliant 2026-02-16` compliance comment to all new/modified `.rs` files (`crates/modelizer/src/lib.rs`, `crates/domain/src/lib.rs`, `crates/fraud_detection/src/adapters/demo_model.rs`, `crates/fraud_detection/src/adapters/mod.rs`, `crates/fraud_detection/src/main.rs`)
 - [X] T039 Run `cargo test --workspace` and verify all tests pass; run `cargo build --release` and confirm pipeline binary compiles
 
 ---

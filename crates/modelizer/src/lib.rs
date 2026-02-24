@@ -1,4 +1,4 @@
-// Rust guideline compliant 2026-02-23
+// Rust guideline compliant 2026-02-16
 
 //! Generic Modelizer component for the fraud-detection pipeline.
 //!
@@ -73,9 +73,7 @@ impl<M: Model> domain::Modelizer for Modelizer<M> {
 
 #[cfg(test)]
 mod tests {
-    use domain::{
-        InferredTransaction, Model, ModelizerError, ModelVersion, Transaction,
-    };
+    use domain::{InferredTransaction, Model, ModelVersion, ModelizerError, Transaction};
     use std::cell::Cell;
 
     // ------------------------------------------------------------------
@@ -89,7 +87,10 @@ mod tests {
 
     impl MockModel {
         fn new(predicted_fraud: bool) -> Self {
-            Self { predicted_fraud, switch_call: Cell::new(None) }
+            Self {
+                predicted_fraud,
+                switch_call: Cell::new(None),
+            }
         }
     }
 
@@ -147,7 +148,10 @@ mod tests {
 
         assert_eq!(result.len(), 5);
         for (i, inferred) in result.iter().enumerate() {
-            assert_eq!(inferred.transaction.id, ids[i], "order mismatch at index {i}");
+            assert_eq!(
+                inferred.transaction.id, ids[i],
+                "order mismatch at index {i}"
+            );
         }
     }
 
@@ -160,7 +164,9 @@ mod tests {
         let tx = make_tx();
         let model = MockModel::new(true);
         let modelizer = super::Modelizer::new(model);
-        let result = domain::Modelizer::infer(&modelizer, vec![tx]).await.unwrap();
+        let result = domain::Modelizer::infer(&modelizer, vec![tx])
+            .await
+            .unwrap();
 
         assert_eq!(result.len(), 1);
         let inferred: &InferredTransaction = &result[0];
@@ -177,7 +183,9 @@ mod tests {
     async fn modelizer_switch_delegates_to_model() {
         let model = MockModel::new(false);
         let modelizer = super::Modelizer::new(model);
-        domain::Modelizer::switch_version(&modelizer, ModelVersion::NMinus1).await.unwrap();
+        domain::Modelizer::switch_version(&modelizer, ModelVersion::NMinus1)
+            .await
+            .unwrap();
         assert_eq!(
             modelizer.model.switch_call.get(),
             Some(ModelVersion::NMinus1),

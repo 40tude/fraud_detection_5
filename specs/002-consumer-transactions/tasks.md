@@ -190,7 +190,7 @@ MockModelizer.last_version == NMinus1.
 
 - [X] T039 Run `cargo test --workspace` and fix any failing tests
 - [X] T040 Run `cargo clippy --workspace --all-targets` and fix all lint warnings (check #[must_use], doc comment format < 15 words summary, Ref<'_> lifetimes, #[expect] not #[allow])
-- [X] T041 Add compliance comment `// Rust guideline compliant 2026-02-22` to `crates/consumer/src/lib.rs` and new adapter files; verify quickstart.md build/run steps execute successfully
+- [X] T041 Add compliance comment `// Rust guideline compliant 2026-02-16` to `crates/consumer/src/lib.rs` and new adapter files; verify quickstart.md build/run steps execute successfully
 
 ---
 

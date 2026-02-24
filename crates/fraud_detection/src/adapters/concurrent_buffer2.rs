@@ -1,4 +1,4 @@
-// Rust guideline compliant 2026-02-23
+// Rust guideline compliant 2026-02-16
 
 //! Concurrent-capable adapter for the `Buffer2` and `Buffer2Read` ports.
 //!

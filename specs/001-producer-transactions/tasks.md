@@ -118,7 +118,7 @@
 **Purpose**: ms-rust compliance, lint gate, and final validation across all crates.
 
 - [X] T030 [P] Apply ms-rust compliance across workspace: #[must_use] on ProducerConfig::builder and ProducerConfigBuilder::build; #[derive(Debug)] on all public types; replace any #[allow] with #[expect(..., reason = "...")] in crates/domain/src/lib.rs, crates/producer/src/lib.rs, crates/fraud_detection/src/adapters/in_memory_buffer.rs
-- [X] T031 [P] Run cargo clippy --workspace -- -D warnings and fix all violations; add // Rust guideline compliant YYYY-MM-DD comment to each source file in all workspace crates
+- [X] T031 [P] Run cargo clippy --workspace -- -D warnings and fix all violations; add // Rust guideline compliant 2026-02-16 comment to each source file in all workspace crates
 - [X] T032 Run cargo test --workspace and confirm all 12 tests pass (domain: 3, producer: 8, fraud_detection: 1)
 - [X] T033 [P] Run cargo build --release and verify zero warnings
 - [X] T034 Validate quickstart.md: run RUST_LOG=info cargo run and confirm log output shows iteration count and batch size; run RUST_LOG=debug cargo test and confirm per-transaction debug output in crates/fraud_detection/

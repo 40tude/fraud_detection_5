@@ -1,4 +1,4 @@
-// Rust guideline compliant 2026-02-24
+// Rust guideline compliant 2026-02-16
 
 //! SQLite adapter for the `Storage` port (demo).
 //!

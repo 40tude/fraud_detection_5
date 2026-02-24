@@ -1,4 +1,4 @@
-// Rust guideline compliant 2026-02-23
+// Rust guideline compliant 2026-02-16
 
 //! Producer component -- generates random transaction batches and writes them
 //! to a `Buffer1` hexagonal port.
@@ -131,8 +131,8 @@ impl ProducerConfigBuilder {
 ///
 /// 10 entries -- index always derived from `random_range(0..10)`, never panics.
 const LAST_NAMES: &[&str] = &[
-    "Smith", "Johnson", "Williams", "Brown", "Jones",
-    "Garcia", "Miller", "Davis", "Wilson", "Taylor",
+    "Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis", "Wilson",
+    "Taylor",
 ];
 
 /// Generates random transaction batches and forwards them to a [`Buffer1`] port.
@@ -186,7 +186,11 @@ impl Producer {
             let last_name_idx = rng.random_range(0..LAST_NAMES.len());
             let last_name = LAST_NAMES[last_name_idx].to_owned();
 
-            batch.push(Transaction { id, amount, last_name });
+            batch.push(Transaction {
+                id,
+                amount,
+                last_name,
+            });
         }
         batch
     }
@@ -198,10 +202,7 @@ impl Producer {
     /// Propagates any [`BufferError`] wrapped in [`ProducerError::Buffer`].
     pub async fn produce_once<B: Buffer1>(&self, buffer: &B) -> Result<(), ProducerError> {
         let batch = self.generate_batch();
-        log::debug!(
-            "producer.batch.generated: size={}",
-            batch.len()
-        );
+        log::debug!("producer.batch.generated: size={}", batch.len());
         buffer.write_batch(batch).await?;
         Ok(())
     }
@@ -221,10 +222,10 @@ impl Producer {
         loop {
             match self.produce_once(buffer).await {
                 Ok(()) => {}
-                Err(ProducerError::Buffer { source: BufferError::Closed }) => {
-                    log::info!(
-                        "producer.run.stopped: buffer closed after {count} iteration(s)"
-                    );
+                Err(ProducerError::Buffer {
+                    source: BufferError::Closed,
+                }) => {
+                    log::info!("producer.run.stopped: buffer closed after {count} iteration(s)");
                     return Ok(());
                 }
                 Err(e) => return Err(e),
@@ -267,7 +268,9 @@ mod tests {
 
     impl TestBuffer {
         fn new() -> Self {
-            Self { batches: RefCell::new(vec![]) }
+            Self {
+                batches: RefCell::new(vec![]),
+            }
         }
 
         fn batch_count(&self) -> usize {
@@ -327,7 +330,10 @@ mod tests {
             assert!((1..=10).contains(&sz), "batch size {sz} out of [1, 10]");
             seen[sz] = true;
         }
-        #[expect(clippy::needless_range_loop, reason = "index 0 is intentionally skipped")]
+        #[expect(
+            clippy::needless_range_loop,
+            reason = "index 0 is intentionally skipped"
+        )]
         for i in 1..=10 {
             assert!(seen[i], "size {i} never appeared in 100 batches");
         }
@@ -401,7 +407,10 @@ mod tests {
         assert_eq!(buffer.batch_count(), 5, "expected exactly 5 batches");
         let total = buffer.total_tx_count();
         // 5 batches, each 1..=10 transactions
-        assert!((5..=50).contains(&total), "total tx count {total} out of expected range");
+        assert!(
+            (5..=50).contains(&total),
+            "total tx count {total} out of expected range"
+        );
     }
 
     #[tokio::test]
@@ -426,7 +435,9 @@ mod tests {
         assert!(
             matches!(
                 result,
-                Err(ProducerError::Buffer { source: BufferError::Full { .. } })
+                Err(ProducerError::Buffer {
+                    source: BufferError::Full { .. }
+                })
             ),
             "Full error must be propagated: {result:?}"
         );

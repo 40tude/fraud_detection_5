@@ -163,9 +163,9 @@
 
 ## Phase 9: Polish & Cross-Cutting Concerns
 
-- [X] T046 [P] Verify ms-rust compliance in crates/logger/src/lib.rs: `#[must_use]` on all constructors and builder methods, `#[derive(Debug)]` on all public types, `#[expect(..., reason="...")]` used instead of `#[allow]`, add compliance comment `// Rust guideline compliant 2026-02-23`
-- [X] T047 [P] Add compliance comment `// Rust guideline compliant 2026-02-23` and verify `#[must_use]`, `#[derive(Debug)]`, `#[expect]` usage in crates/fraud_detection/src/adapters/concurrent_buffer2.rs
-- [X] T048 [P] Add compliance comment `// Rust guideline compliant 2026-02-23` and verify `#[must_use]`, `#[derive(Debug)]`, `#[expect]` usage in crates/fraud_detection/src/adapters/in_memory_storage.rs
+- [X] T046 [P] Verify ms-rust compliance in crates/logger/src/lib.rs: `#[must_use]` on all constructors and builder methods, `#[derive(Debug)]` on all public types, `#[expect(..., reason="...")]` used instead of `#[allow]`, add compliance comment `// Rust guideline compliant 2026-02-16`
+- [X] T047 [P] Add compliance comment `// Rust guideline compliant 2026-02-16` and verify `#[must_use]`, `#[derive(Debug)]`, `#[expect]` usage in crates/fraud_detection/src/adapters/concurrent_buffer2.rs
+- [X] T048 [P] Add compliance comment `// Rust guideline compliant 2026-02-16` and verify `#[must_use]`, `#[derive(Debug)]`, `#[expect]` usage in crates/fraud_detection/src/adapters/in_memory_storage.rs
 - [X] T049 Run `cargo test --workspace` and verify all 70+ tests pass (61 existing + new domain + logger + adapter tests); fix any compilation errors or assertion failures in affected source files
 
 ---
