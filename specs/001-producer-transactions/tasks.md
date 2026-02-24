@@ -61,7 +61,7 @@
 ### Implementation for User Story 1
 
 - [X] T014 [US1] Implement ProducerError with thiserror::Error (#[derive(Debug)], InvalidConfig { reason: String }, Buffer { #[from] source: BufferError }) in crates/producer/src/lib.rs
-- [X] T015 [US1] Implement ProducerConfigBuilder (fields: n1_max, speed1, iterations, seed) and ProducerConfig::builder(n1_max: usize) -> ProducerConfigBuilder with defaults (speed1 = 100ms, iterations = None, seed = None); build() validates n1_max >= 1 and returns Result<ProducerConfig, ProducerError> in crates/producer/src/lib.rs
+- [X] T015 [US1] Implement ProducerConfigBuilder (fields: n1_max, poll_interval1, iterations, seed) and ProducerConfig::builder(n1_max: usize) -> ProducerConfigBuilder with defaults (poll_interval1 = 100ms, iterations = None, seed = None); build() validates n1_max >= 1 and returns Result<ProducerConfig, ProducerError> in crates/producer/src/lib.rs
 - [X] T016 [US1] Implement Producer<B: Buffer1> with StdRng initialized from seed (StdRng::seed_from_u64) or StdRng::from_os_rng(), const LAST_NAMES: [&str; N] array, and generate_batch (rng.random_range(1..=n1_max) size, UUID via Builder::from_random_bytes + rng.fill_bytes, amount as rng.random_range(1..=1_000_000) as f64 / 100.0, random last_name index) in crates/producer/src/lib.rs
 
 **Checkpoint**: `cargo test -p producer` passes config_rejects_zero, batch_size_bounds, tx_fields_valid. US1 is fully testable in isolation.
@@ -90,15 +90,15 @@
 
 ---
 
-## Phase 5: User Story 3 -- Continuous Production at speed1 (Priority: P2)
+## Phase 5: User Story 3 -- Continuous Production every poll_interval1 (Priority: P2)
 
-**Goal**: Producer runs in a loop for a configurable number of iterations (or indefinitely), sleeping speed1 between each batch; handles Closed termination cleanly.
+**Goal**: Producer runs in a loop for a configurable number of iterations (or indefinitely), sleeping poll_interval1 between each batch; handles Closed termination cleanly.
 
-**Independent Test**: Start Producer with iterations = Some(5) and a zero-duration speed1; assert buffer received exactly 5 batches each of valid size. Start with a buffer that returns Closed; assert Producer::run returns Ok(()).
+**Independent Test**: Start Producer with iterations = Some(5) and a zero-duration poll_interval1; assert buffer received exactly 5 batches each of valid size. Start with a buffer that returns Closed; assert Producer::run returns Ok(()).
 
 ### Tests for User Story 3 (TDD: write first, ensure FAIL before implementation)
 
-- [X] T023 [US3] Write failing test run_n_iterations (Producer::run with iterations=Some(5), speed1=0ms, InMemoryBuffer; assert 5 batches written and total tx count in expected bounds) in crates/producer/src/lib.rs
+- [X] T023 [US3] Write failing test run_n_iterations (Producer::run with iterations=Some(5), poll_interval1=0ms, InMemoryBuffer; assert 5 batches written and total tx count in expected bounds) in crates/producer/src/lib.rs
 - [X] T024 [P] [US3] Write failing test run_stops_on_closed (buffer returns BufferError::Closed on first write; Producer::run returns Ok(())) in crates/producer/src/lib.rs
 - [X] T025 [P] [US3] Write failing test run_propagates_full (buffer returns BufferError::Full on first write; Producer::run returns Err(ProducerError::Buffer { source: BufferError::Full { .. } })) in crates/producer/src/lib.rs
 
@@ -106,7 +106,7 @@
 
 - [X] T026 [US3] Implement Producer::run(&self, buffer: &B) -> Result<(), ProducerError> with loop: generate_batch, write via produce_once, match on ProducerError::Buffer { source: BufferError::Closed } -> break Ok(()), other errors -> return Err in crates/producer/src/lib.rs
 - [X] T027 [US3] Add iterations handling to Producer::run: if config.iterations == Some(n) track count and break after n batches; if None loop indefinitely until Closed or error in crates/producer/src/lib.rs
-- [X] T028 [US3] Add tokio::time::sleep(self.config.speed1) after each successful write in Producer::run in crates/producer/src/lib.rs
+- [X] T028 [US3] Add tokio::time::sleep(self.config.poll_interval1) after each successful write in Producer::run in crates/producer/src/lib.rs
 - [X] T029 [US3] Update crates/fraud_detection/src/main.rs to call producer.run(&buffer).await with anyhow::Context for error propagation; add RUST_LOG=info logging guidance comment in crates/fraud_detection/src/main.rs
 
 **Checkpoint**: `cargo test -p producer` passes run_n_iterations, run_stops_on_closed, run_propagates_full. Total: 7 producer tests green.

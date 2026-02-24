@@ -119,7 +119,7 @@ trait Alarm {
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `n2_max` | `usize` | (required) | Max batch size, range `[1, N2_MAX]` |
-| `speed2` | `Duration` | `100ms` | Delay between processing iterations |
+| `poll_interval2` | `Duration` | `100ms` | Delay between processing iterations |
 | `iterations` | `Option<u64>` | `None` | Optional iteration limit |
 | `seed` | `Option<u64>` | `None` | Optional RNG seed for deterministic batch sizes |
 

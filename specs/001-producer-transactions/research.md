@@ -24,7 +24,7 @@ from backend; `env_logger` reads `RUST_LOG` at runtime.
 **Decision**: `tokio` 1.x with features `rt`, `macros`, `time`
 **Rationale**: Constitution mandates async communication. `tokio` is the de-facto
 standard. Single-threaded runtime (`current_thread`) is sufficient for PoC.
-`time` feature needed for `tokio::time::sleep` (speed1 delay between iterations).
+`time` feature needed for `tokio::time::sleep` (poll_interval1 delay between iterations).
 **Alternatives considered**: `async-std` (smaller ecosystem), manual
 `futures::executor` (no timer support).
 

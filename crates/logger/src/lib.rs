@@ -44,7 +44,7 @@ pub struct LoggerConfig {
     /// Maximum batch size drawn from Buffer2 per iteration (range: `[1, n3_max]`).
     pub n3_max: usize,
     /// Delay between successive iterations.
-    pub speed3: Duration,
+    pub poll_interval3: Duration,
     /// Optional upper bound on the number of iterations. `None` means infinite.
     pub iterations: Option<u64>,
     /// Optional RNG seed for reproducible batch sizing. `None` seeds from the OS.
@@ -57,7 +57,7 @@ pub struct LoggerConfig {
 #[derive(Debug)]
 pub struct LoggerConfigBuilder {
     n3_max: usize,
-    speed3: Duration,
+    poll_interval3: Duration,
     iterations: Option<u64>,
     seed: Option<u64>,
 }
@@ -65,13 +65,13 @@ pub struct LoggerConfigBuilder {
 impl LoggerConfig {
     /// Create a builder. `n3_max` is the only required parameter.
     ///
-    /// Default values: `speed3 = 100 ms`, `iterations = None`, `seed = None`.
+    /// Default values: `poll_interval3 = 100 ms`, `iterations = None`, `seed = None`.
     #[must_use]
     pub fn builder(n3_max: usize) -> LoggerConfigBuilder {
         LoggerConfigBuilder {
             n3_max,
             // 100 ms chosen as a reasonable demo cadence; lower for tests.
-            speed3: Duration::from_millis(100),
+            poll_interval3: Duration::from_millis(100),
             iterations: None,
             seed: None,
         }
@@ -81,8 +81,8 @@ impl LoggerConfig {
 impl LoggerConfigBuilder {
     /// Override the inter-iteration delay.
     #[must_use]
-    pub fn speed3(mut self, speed3: Duration) -> Self {
-        self.speed3 = speed3;
+    pub fn poll_interval3(mut self, poll_interval3: Duration) -> Self {
+        self.poll_interval3 = poll_interval3;
         self
     }
 
@@ -114,7 +114,7 @@ impl LoggerConfigBuilder {
         }
         Ok(LoggerConfig {
             n3_max: self.n3_max,
-            speed3: self.speed3,
+            poll_interval3: self.poll_interval3,
             iterations: self.iterations,
             seed: self.seed,
         })
@@ -178,7 +178,7 @@ impl Logger {
 
     /// Run the read-transform-persist loop until stopped.
     ///
-    /// Calls [`log_once`](Self::log_once) repeatedly, sleeping `config.speed3`
+    /// Calls [`log_once`](Self::log_once) repeatedly, sleeping `config.poll_interval3`
     /// between iterations. Stops cleanly when:
     /// - Buffer2 signals [`BufferError::Closed`] (returns `Ok(())`), or
     /// - `config.iterations` batches have been processed (returns `Ok(())`).
@@ -214,7 +214,7 @@ impl Logger {
                 return Ok(());
             }
 
-            tokio::time::sleep(self.config.speed3).await;
+            tokio::time::sleep(self.config.poll_interval3).await;
         }
     }
 }
@@ -317,15 +317,15 @@ mod tests {
     }
 
     #[test]
-    fn config_speed3_default_is_100ms() {
+    fn config_poll_interval3_default_is_100ms() {
         let cfg = LoggerConfig::builder(1).build().unwrap();
-        assert_eq!(cfg.speed3, Duration::from_millis(100));
+        assert_eq!(cfg.poll_interval3, Duration::from_millis(100));
     }
 
     #[test]
-    fn config_speed3_setter_overrides() {
-        let cfg = LoggerConfig::builder(1).speed3(Duration::ZERO).build().unwrap();
-        assert_eq!(cfg.speed3, Duration::ZERO);
+    fn config_poll_interval3_setter_overrides() {
+        let cfg = LoggerConfig::builder(1).poll_interval3(Duration::ZERO).build().unwrap();
+        assert_eq!(cfg.poll_interval3, Duration::ZERO);
     }
 
     #[test]
@@ -410,7 +410,7 @@ mod tests {
         let storage = MockStorage::new();
         let cfg = LoggerConfig::builder(10)
             .seed(1)
-            .speed3(Duration::ZERO)
+            .poll_interval3(Duration::ZERO)
             .build()
             .unwrap();
         let logger = Logger::new(cfg);
@@ -474,7 +474,7 @@ mod tests {
         let storage = MockStorage::new();
         let cfg = LoggerConfig::builder(10)
             .seed(1)
-            .speed3(Duration::ZERO)
+            .poll_interval3(Duration::ZERO)
             .build()
             .unwrap();
         let logger = Logger::new(cfg);
@@ -533,7 +533,7 @@ mod tests {
         let cfg = LoggerConfig::builder(5)
             .seed(1)
             .iterations(3)
-            .speed3(Duration::ZERO)
+            .poll_interval3(Duration::ZERO)
             .build()
             .unwrap();
         let logger = Logger::new(cfg);
@@ -555,7 +555,7 @@ mod tests {
         let storage = MockStorage::new();
         let cfg = LoggerConfig::builder(10)
             .seed(1)
-            .speed3(Duration::ZERO)
+            .poll_interval3(Duration::ZERO)
             .build()
             .unwrap();
         let logger = Logger::new(cfg);
@@ -575,7 +575,7 @@ mod tests {
         let cfg = LoggerConfig::builder(5)
             .seed(2)
             .iterations(2)
-            .speed3(Duration::ZERO)
+            .poll_interval3(Duration::ZERO)
             .build()
             .unwrap();
         let logger = Logger::new(cfg);

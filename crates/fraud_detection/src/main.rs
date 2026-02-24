@@ -39,7 +39,7 @@ async fn main() -> anyhow::Result<()> {
     // Set .iterations(10) here for a finite demo run.
     let producer_config = ProducerConfig::builder(100)
         // 500 ms between batches keeps logs readable in real time.
-        .speed1(Duration::from_millis(500))
+        .poll_interval1(Duration::from_millis(500))
         // .iterations(10)
         .build()
         .context("failed to build producer config")?;
@@ -51,7 +51,7 @@ async fn main() -> anyhow::Result<()> {
     // -- Consumer: drain Buffer1 -> Modelizer<DemoModel> -> Buffer2 --
     let consumer_config = ConsumerConfig::builder(50)
         // 25 ms ensures Consumer yields regularly so Producer gets CPU time.
-        .speed2(Duration::from_millis(25))
+        .poll_interval2(Duration::from_millis(25))
         .build()
         .context("failed to build consumer config")?;
 
@@ -66,7 +66,7 @@ async fn main() -> anyhow::Result<()> {
     // -- Logger: drain Buffer2 -> InMemoryStorage --
     let logger_config = LoggerConfig::builder(10)
         // 25 ms matches Consumer cadence.
-        .speed3(Duration::from_millis(25))
+        .poll_interval3(Duration::from_millis(25))
         .build()
         .context("failed to build logger config")?;
 

@@ -152,10 +152,10 @@ another from making progress.
 
 | Component  | Input               | Output              | Key Behavior                              |
 |------------|---------------------|---------------------|-------------------------------------------|
-| Producer   | None                | Buffer1             | Generates batches of transactions at speed1 |
-| Consumer   | Buffer1             | Modelizer           | Read batches of transaction at speed2                |
+| Producer   | None                | Buffer1             | Generates batches of transactions every poll_interval1 |
+| Consumer   | Buffer1             | Modelizer           | Read batches of transaction every poll_interval2                |
 | Modelizer  | Consumer            | Consumer            | Infer and add fields `predicted_fraud`, `model_name` and `model_version` to each transaction. Model version (N, N-1) is selectable |
-| Consumer   | Modelizer           | Buffer2 + Alert     | Forwards batches of inferred transactions at speed2     |
+| Consumer   | Modelizer           | Buffer2 + Alert     | Forwards batches of inferred transactions every poll_interval2     |
 | Logger     | Buffer2             | Storage             | Add fields `is_reviewed` (bool, false) and `actual_fraud` (Option<bool>, None) to the inferred transactions then persists the batch to Storage |
 
 ### Buffers and Storage

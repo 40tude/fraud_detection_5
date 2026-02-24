@@ -10,7 +10,7 @@
 
 ## Requirement Completeness
 
-- [ ] CHK001 - Are `LoggerConfig` field defaults (speed3 initial value, iterations initial value) explicitly specified in the spec, or only inferred from prior crate conventions? [Completeness, Gap, Spec §FR-007, FR-008]
+- [ ] CHK001 - Are `LoggerConfig` field defaults (poll_interval3 initial value, iterations initial value) explicitly specified in the spec, or only inferred from prior crate conventions? [Completeness, Gap, Spec §FR-007, FR-008]
 - [ ] CHK002 - Is the builder pattern (`LoggerConfig::builder`) a stated spec requirement, or only implied by plan.md and producer/consumer precedent? [Completeness, Gap]
 - [ ] CHK003 - Are `LoggerError` variant names and wrapping semantics (Read wraps BufferError, Write wraps StorageError) specified in the spec, or only in plan/tasks? [Completeness, Gap]
 - [ ] CHK004 - Is the `PendingTransaction::id()` convenience method justified by a user scenario, or is it a technical convenience not grounded in requirements? [Completeness, Spec §Key Entities]
@@ -23,7 +23,7 @@
 
 - [ ] CHK007 - Is the RNG distribution for batch size N3 specified (uniform), or is "randomly chosen in [1, N3_MAX]" ambiguous about distribution? [Clarity, Spec §FR-002]
 - [ ] CHK008 - Does FR-011 specify the log level (debug vs. info), the exact log key format, and which call site (log_once vs. run) emits each entry? [Ambiguity, Spec §FR-011]
-- [ ] CHK009 - Is "delay between iterations" (speed3) precisely defined -- does it apply before the first iteration, after the last, or strictly between consecutive iterations? [Clarity, Spec §FR-007]
+- [ ] CHK009 - Is "delay between iterations" (poll_interval3) precisely defined -- does it apply before the first iteration, after the last, or strictly between consecutive iterations? [Clarity, Spec §FR-007]
 - [ ] CHK010 - Is `StorageError::CapacityExceeded { capacity: usize }` clearly defined -- does `capacity` represent the total store capacity or remaining available space? [Ambiguity, Spec §Key Entities]
 - [ ] CHK011 - Is the conceptual boundary between `BufferError::Closed` (buffer protocol) and `StorageError::Unavailable` (storage protocol) clearly articulated with distinct semantics? [Clarity, Spec §Key Entities]
 - [ ] CHK012 - Is SC-004 ("stops within one iteration") precisely defined -- does the current in-flight iteration complete before the Logger exits the loop? [Clarity, Spec §SC-004]
@@ -60,7 +60,7 @@
 
 - [ ] CHK024 - Are atomicity semantics for batch writes to Storage defined -- is partial persistence (some items stored, error mid-batch) explicitly prohibited? [Edge Case, Spec §FR-010, §Edge Cases]
 - [ ] CHK025 - Is the drain-after-close behavior (Logger continues reading until Buffer2 is both closed AND empty) explicitly required, not only listed as an edge case note? [Coverage, Spec §Edge Cases]
-- [ ] CHK026 - Is zero-delay speed3 (Duration::ZERO) defined as a valid configuration, and is any associated behavior (e.g., immediate iteration) specified? [Edge Case, Gap]
+- [ ] CHK026 - Is zero-delay poll_interval3 (Duration::ZERO) defined as a valid configuration, and is any associated behavior (e.g., immediate iteration) specified? [Edge Case, Gap]
 
 ---
 

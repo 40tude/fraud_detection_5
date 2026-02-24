@@ -55,7 +55,7 @@ app exits cleanly on its own with no error.
 
 - [X] T007 [US1] Replace `InMemoryBuffer` with `ConcurrentBuffer` in `crates/fraud_detection/src/main.rs`; wrap producer call in `let producer_task = async { let r = producer.run(&buffer1).await; buffer1.close(); r };` to propagate finite-mode shutdown via buffer closure
 - [X] T008 [US1] Replace sequential `producer.run()`/`consumer.run()` calls with `let (p, c) = tokio::join!(producer_task, consumer.run(&buffer1, &modelizer, &alarm)).await; p.context("producer failed")?; c.context("consumer failed")?;` in `crates/fraud_detection/src/main.rs`
-- [X] T009 [US1] Set `ConsumerConfig` `speed2` to `Duration::from_millis(25)` (ensures Consumer yields regularly so Producer gets CPU time) in `crates/fraud_detection/src/main.rs`
+- [X] T009 [US1] Set `ConsumerConfig` `poll_interval2` to `Duration::from_millis(25)` (ensures Consumer yields regularly so Producer gets CPU time) in `crates/fraud_detection/src/main.rs`
 
 **Checkpoint**: `tokio::join!` wired; app exits cleanly after finite Producer run (set iterations(10) to test); US1 scenarios verified manually
 

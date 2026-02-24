@@ -35,4 +35,4 @@
 - Clarification session 2026-02-22: 2 questions asked and answered.
   - Q1: Alarm failure policy -> Best-effort alarms, Buffer2 write always proceeds.
   - Q2: Model version switch trigger -> Consumer delegates to Modelizer port; Modelizer owns version state.
-- Assumptions section documents 7 informed defaults (speed2 pattern, version switch timing, Buffer1 read trait, InferredTransaction type, Alarm granularity, error propagation, model version ownership).
+- Assumptions section documents 7 informed defaults (poll_interval2 pattern, version switch timing, Buffer1 read trait, InferredTransaction type, Alarm granularity, error propagation, model version ownership).

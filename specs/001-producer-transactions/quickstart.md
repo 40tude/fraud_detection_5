@@ -76,7 +76,7 @@ crates/
 
 ```rust
 let config = ProducerConfig::builder(100)    // n1_max = 100
-    .speed1(Duration::from_millis(50))        // 50ms between batches
+    .poll_interval1(Duration::from_millis(50))        // 50ms between batches
     .iterations(Some(10))                     // 10 batches then stop
     .seed(Some(42))                           // deterministic for testing
     .build()?;

@@ -31,8 +31,8 @@
   - FAIL: FR-009 only addresses sequential calls. Concurrent execution is neither specified nor explicitly excluded.
 - [ ] CHK009 - Is "passes ModelVersion values through without interpreting them" in FR-015 specific enough to exclude any conditional logic in the Modelizer? [Clarity, Spec §FR-015]
   - FAIL: Stated as intent. No structural constraint (e.g., "modelizer crate MUST NOT contain a match on ModelVersion").
-- [X] CHK010 - Is "speed2" in the Input section defined or cross-referenced to feature 002 spec, or assumed as shared knowledge? [Clarity, Spec Input]
-  - PASS: Assumptions section defines "speed2" as the Consumer's iteration cadence.
+- [X] CHK010 - Is "poll_interval2" in the Input section defined or cross-referenced to feature 002 spec, or assumed as shared knowledge? [Clarity, Spec Input]
+  - PASS: Assumptions section defines "poll_interval2" as the Consumer's iteration cadence.
 - [ ] CHK011 - Is the scope of FR-012 ("never depend on concrete implementation") stated in terms of import/type-level constraints, not just intent? [Clarity, Spec §FR-012]
   - FAIL: "never on a concrete model implementation" is stated as intent. No import/crate-dependency constraint is specified.
 

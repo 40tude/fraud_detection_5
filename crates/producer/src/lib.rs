@@ -45,7 +45,7 @@ pub struct ProducerConfig {
     /// Maximum number of transactions per batch (range: `[1, n1_max]`).
     pub n1_max: usize,
     /// Delay between successive batch writes.
-    pub speed1: Duration,
+    pub poll_interval1: Duration,
     /// Optional upper bound on the number of iterations. `None` means infinite.
     pub iterations: Option<u64>,
     /// Optional RNG seed for reproducible batches. `None` seeds from the OS.
@@ -58,7 +58,7 @@ pub struct ProducerConfig {
 #[derive(Debug)]
 pub struct ProducerConfigBuilder {
     n1_max: usize,
-    speed1: Duration,
+    poll_interval1: Duration,
     iterations: Option<u64>,
     seed: Option<u64>,
 }
@@ -66,13 +66,13 @@ pub struct ProducerConfigBuilder {
 impl ProducerConfig {
     /// Create a builder. `n1_max` is the only required parameter.
     ///
-    /// Default values: `speed1 = 100 ms`, `iterations = None`, `seed = None`.
+    /// Default values: `poll_interval1 = 100 ms`, `iterations = None`, `seed = None`.
     #[must_use]
     pub fn builder(n1_max: usize) -> ProducerConfigBuilder {
         ProducerConfigBuilder {
             n1_max,
             // 100 ms chosen as a reasonable demo cadence; lower for tests.
-            speed1: Duration::from_millis(100),
+            poll_interval1: Duration::from_millis(100),
             iterations: None,
             seed: None,
         }
@@ -82,8 +82,8 @@ impl ProducerConfig {
 impl ProducerConfigBuilder {
     /// Override the inter-batch delay.
     #[must_use]
-    pub fn speed1(mut self, speed1: Duration) -> Self {
-        self.speed1 = speed1;
+    pub fn poll_interval1(mut self, poll_interval1: Duration) -> Self {
+        self.poll_interval1 = poll_interval1;
         self
     }
 
@@ -116,7 +116,7 @@ impl ProducerConfigBuilder {
         }
         Ok(ProducerConfig {
             n1_max: self.n1_max,
-            speed1: self.speed1,
+            poll_interval1: self.poll_interval1,
             iterations: self.iterations,
             seed: self.seed,
         })
@@ -209,7 +209,7 @@ impl Producer {
     /// Run the production loop until stopped.
     ///
     /// Calls [`produce_once`](Self::produce_once) repeatedly, sleeping
-    /// `config.speed1` between iterations. Stops cleanly when:
+    /// `config.poll_interval1` between iterations. Stops cleanly when:
     /// - the buffer signals [`BufferError::Closed`] (returns `Ok(())`), or
     /// - `config.iterations` batches have been written (returns `Ok(())`).
     ///
@@ -240,7 +240,7 @@ impl Producer {
                 return Ok(());
             }
 
-            tokio::time::sleep(self.config.speed1).await;
+            tokio::time::sleep(self.config.poll_interval1).await;
         }
     }
 }
@@ -390,7 +390,7 @@ mod tests {
         let config = ProducerConfig::builder(10)
             .seed(7)
             .iterations(5)
-            .speed1(Duration::ZERO)
+            .poll_interval1(Duration::ZERO)
             .build()
             .unwrap();
         let producer = Producer::new(config);
@@ -407,7 +407,7 @@ mod tests {
     #[tokio::test]
     async fn run_stops_on_closed() {
         let config = ProducerConfig::builder(10)
-            .speed1(Duration::ZERO)
+            .poll_interval1(Duration::ZERO)
             .build()
             .unwrap();
         let producer = Producer::new(config);
@@ -418,7 +418,7 @@ mod tests {
     #[tokio::test]
     async fn run_propagates_full() {
         let config = ProducerConfig::builder(10)
-            .speed1(Duration::ZERO)
+            .poll_interval1(Duration::ZERO)
             .build()
             .unwrap();
         let producer = Producer::new(config);

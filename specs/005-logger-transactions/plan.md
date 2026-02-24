@@ -29,7 +29,7 @@ Logger reads variable-size batches of `InferredTransaction` from a `Buffer2Read`
 | II | Modular Monolith | PASS | New `crates/logger/` lib crate; `thiserror` for errors, `log` facade for logging; binary crate wires adapters |
 | III | TDD | PASS | All tasks follow red-green-refactor; tests before implementation |
 | IV | Pedagogical Clarity | PASS | Follows exact same patterns as Producer/Consumer; no new abstractions |
-| V | Async Variable Batching | PASS | N3 in `[1, N3_MAX]` random per iteration; speed3 delay between iterations |
+| V | Async Variable Batching | PASS | N3 in `[1, N3_MAX]` random per iteration; poll_interval3 delay between iterations |
 | VI | Concurrent Lifecycle | PASS | Logger joins `tokio::join!`; runs indefinitely by default; stops on Buffer2 closed+drained; `RefCell` adapters valid on `current_thread` |
 
 No violations. Gate PASSES.

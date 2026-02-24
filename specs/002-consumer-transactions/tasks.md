@@ -44,8 +44,8 @@ and testing of each story.
 - [X] T011 Add `Alarm` trait (async fn trigger(&self, transaction: &InferredTransaction) -> Result<(), AlarmError>; `#[expect(async_fn_in_trait, reason="...")]` on trait only) to `crates/domain/src/lib.rs`
 - [X] T012 Write domain unit tests for all new types and traits (inferred_transaction_fields, model_version_variants, modelizer_error_variants, alarm_error_variants, port_trait_struct_impl verifying AFIT compiles) in `crates/domain/src/lib.rs`
 - [X] T013 Add `ConsumerError` enum (InvalidConfig { reason: String }, Read(BufferError), Inference(ModelizerError), Write(BufferError); thiserror::Error; no `#[from]` on Read/Write -- same source type) to `crates/consumer/src/lib.rs`
-- [X] T014 Add `ConsumerConfig` struct (n2_max: usize, speed2: Duration, iterations: Option<u64>, seed: Option<u64>), `ConsumerConfigBuilder`, and `ConsumerConfig::builder(n2_max: usize)` factory with n2_max >= 1 validation returning Result<ConsumerConfig, ConsumerError> to `crates/consumer/src/lib.rs`
-- [X] T015 Write failing tests for ConsumerConfig validation (config_rejects_zero_n2_max, builder_defaults_speed2, builder_with_seed, builder_with_iterations) in `crates/consumer/src/lib.rs`
+- [X] T014 Add `ConsumerConfig` struct (n2_max: usize, poll_interval2: Duration, iterations: Option<u64>, seed: Option<u64>), `ConsumerConfigBuilder`, and `ConsumerConfig::builder(n2_max: usize)` factory with n2_max >= 1 validation returning Result<ConsumerConfig, ConsumerError> to `crates/consumer/src/lib.rs`
+- [X] T015 Write failing tests for ConsumerConfig validation (config_rejects_zero_n2_max, builder_defaults_poll_interval2, builder_with_seed, builder_with_iterations) in `crates/consumer/src/lib.rs`
 - [X] T016 Add `Consumer` struct (config: ConsumerConfig, rng: RefCell<StdRng>) and `#[must_use] Consumer::new(config: ConsumerConfig) -> Self` (seeds StdRng from config.seed or OS RNG) to `crates/consumer/src/lib.rs`
 - [X] T017 Add `#[cfg(test)]` mock adapters (MockBuffer1Read with preloaded Vec<Transaction> + closed flag, MockModelizer with configurable predicted_fraud flag + call counter, MockAlarm with call counter + optional failure mode, MockBuffer2 with captured Vec<InferredTransaction> + optional error mode) to `crates/consumer/src/lib.rs`
 
@@ -56,7 +56,7 @@ and testing of each story.
 ## Phase 3: User Story 1 - Read Batches from Buffer1 (Priority: P1) MVP
 
 **Goal**: Consumer reads variable-size batches from Buffer1 respecting N2_MAX, operates
-at speed2, and stops gracefully when Buffer1 is closed and drained.
+every poll_interval2, and stops gracefully when Buffer1 is closed and drained.
 
 **Independent Test**: Wire MockBuffer1Read preloaded with transactions; verify batch size
 within [1, N2_MAX]; verify Consumer stops when MockBuffer1Read signals Closed.
@@ -71,7 +71,7 @@ within [1, N2_MAX]; verify Consumer stops when MockBuffer1Read signals Closed.
 ### Implementation for User Story 1
 
 - [X] T020 [US1] Implement `Consumer::consume_once<B1, M, A, B2>` (draw N2 from rng in [1, n2_max], call buf1.read_batch(N2), call modelizer.infer(batch), write to buf2.write_batch; alarm loop placeholder returns Ok(vec![])) in `crates/consumer/src/lib.rs`
-- [X] T021 [US1] Implement `Consumer::run<B1, M, A, B2>` (loop: call consume_once, sleep speed2, stop on ConsumerError::Read wrapping BufferError::Closed, propagate other errors) in `crates/consumer/src/lib.rs`
+- [X] T021 [US1] Implement `Consumer::run<B1, M, A, B2>` (loop: call consume_once, sleep poll_interval2, stop on ConsumerError::Read wrapping BufferError::Closed, propagate other errors) in `crates/consumer/src/lib.rs`
 
 **Checkpoint**: US1 tests pass; Consumer reads batches and stops on closed signal
 

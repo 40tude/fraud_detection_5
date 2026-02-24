@@ -29,7 +29,7 @@ Set `iterations(10)` in `ProducerConfig` in `main.rs` to run a bounded demo:
 ```rust
 let producer_config = ProducerConfig::builder(100)
     .iterations(10)
-    .speed1(Duration::from_millis(50))
+    .poll_interval1(Duration::from_millis(50))
     .build()?;
 ```
 

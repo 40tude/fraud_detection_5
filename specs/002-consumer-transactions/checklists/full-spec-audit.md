@@ -10,7 +10,7 @@
 
 - [ ] CHK001 - Is the Buffer1 read-side trait method signature semantically specified (returns up to N, exactly N, or blocks until N)? [Gap, Spec SS-US1]
 - [ ] CHK002 - Is the ConsumerConfig "optional iteration limit" covered by a functional requirement? Only mentioned in Key Entities, no FR references it. [Gap, Spec SS-Key Entities]
-- [ ] CHK003 - Are speed2 units, valid range, and default value specified? FR-011 says "configurable delay" without quantifying constraints. [Completeness, Spec SS-FR-011]
+- [ ] CHK003 - Are poll_interval2 units, valid range, and default value specified? FR-011 says "configurable delay" without quantifying constraints. [Completeness, Spec SS-FR-011]
 - [ ] CHK004 - Is the alarm error reporting mechanism defined? FR-013 says errors are "reported after Buffer2 write" but does not specify how (return value, log, callback). [Gap, Spec SS-FR-013]
 - [ ] CHK005 - Are non-functional requirements (latency, throughput, memory) documented? No NFR section exists. [Gap]
 - [ ] CHK006 - Are logging or observability requirements specified for the Consumer pipeline stage? [Gap]
@@ -25,7 +25,7 @@
 ## Requirement Consistency
 
 - [ ] CHK011 - Are error types consistent across the four hexagonal ports, or is each port expected to define its own error type? FR-013 groups them but Key Entities describes ports separately. [Consistency, Spec SS-FR-013 vs SS-Key Entities]
-- [ ] CHK012 - Is the relationship between Assumption "speed2 follows Producer's speed1 pattern" and FR-011 explicitly cross-referenced? If speed1's pattern changes, does speed2 follow? [Consistency, Spec SS-Assumptions vs SS-FR-011]
+- [ ] CHK012 - Is the relationship between Assumption "poll_interval2 follows Producer's poll_interval1 pattern" and FR-011 explicitly cross-referenced? If poll_interval1's pattern changes, does poll_interval2 follow? [Consistency, Spec SS-Assumptions vs SS-FR-011]
 - [ ] CHK013 - Does FR-009 (Modelizer defaults to version N) belong in the Consumer spec or a future Modelizer spec? It describes Modelizer behavior, not Consumer behavior. [Consistency, Spec SS-FR-009]
 
 ## Acceptance Criteria Quality

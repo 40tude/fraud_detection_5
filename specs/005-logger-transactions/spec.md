@@ -3,7 +3,7 @@
 **Feature Branch**: `005-logger-transactions`
 **Created**: 2026-02-23
 **Status**: Draft
-**Input**: User description: "Logger extracts from Buffer2 batches of inferred_transaction at speed3. Batches are of size N3 which vary at each iteration [1, N3_MAX]. Logger writes pending_transactions. pending_transaction = inferred_transaction + {prediction_confirmed (=F)}. The field prediction_confirmed of each transaction is set to False. The field prediction_confirmed will be updated later once the transaction is fully checked. The Logger has no idea about Buffer2 nor Storage implementation (decoupling with ports and adapters). Similarly to Producer, the Logger runs asynchronously until the app ends."
+**Input**: User description: "Logger extracts from Buffer2 batches of inferred_transaction every poll_interval3. Batches are of size N3 which vary at each iteration [1, N3_MAX]. Logger writes pending_transactions. pending_transaction = inferred_transaction + {prediction_confirmed (=F)}. The field prediction_confirmed of each transaction is set to False. The field prediction_confirmed will be updated later once the transaction is fully checked. The Logger has no idea about Buffer2 nor Storage implementation (decoupling with ports and adapters). Similarly to Producer, the Logger runs asynchronously until the app ends."
 
 ## Clarifications
 
@@ -17,7 +17,7 @@
 
 ### User Story 1 - Read Batches from Buffer2 (Priority: P1)
 
-The Logger reads variable-size batches of inferred transactions from Buffer2. Each iteration, the batch size N3 is randomly chosen in [1, N3_MAX]. Reading happens at speed3 (a configurable delay between iterations). If Buffer2 is empty, the Logger waits for data. If Buffer2 is closed and drained, the Logger stops.
+The Logger reads variable-size batches of inferred transactions from Buffer2. Each iteration, the batch size N3 is randomly chosen in [1, N3_MAX]. Reading happens every poll_interval3 (a configurable delay between iterations). If Buffer2 is empty, the Logger waits for data. If Buffer2 is closed and drained, the Logger stops.
 
 **Why this priority**: Without reading from Buffer2, no downstream persistence can occur. This is the entry point of the Logger pipeline.
 
@@ -66,7 +66,7 @@ After transformation, the Logger writes each batch of pending transactions to St
 
 ### User Story 4 - Continuous Async Loop (Priority: P1)
 
-The Logger runs as a continuous async loop: read batch, transform, persist, wait speed3, repeat. It runs indefinitely by default (no iteration limit). An optional iteration limit can be set for testing. The Logger stops gracefully when Buffer2 signals closed-and-drained.
+The Logger runs as a continuous async loop: read batch, transform, persist, wait poll_interval3, repeat. It runs indefinitely by default (no iteration limit). An optional iteration limit can be set for testing. The Logger stops gracefully when Buffer2 signals closed-and-drained.
 
 **Why this priority**: The run loop ties US1-US3 together into the complete Logger lifecycle required by the concurrent pipeline.
 
@@ -76,7 +76,7 @@ The Logger runs as a continuous async loop: read batch, transform, persist, wait
 
 1. **Given** Logger configured with iteration limit 3 and Buffer2 has enough data, **When** Logger runs, **Then** exactly 3 read-transform-persist cycles execute.
 2. **Given** Logger configured with no iteration limit and Buffer2 is closed after 5 batches, **When** Logger runs, **Then** Logger stops gracefully after processing 5 batches.
-3. **Given** Logger configured with speed3 = 200ms, **When** Logger processes iterations, **Then** there is a delay of approximately 200ms between each iteration.
+3. **Given** Logger configured with poll_interval3 = 200ms, **When** Logger processes iterations, **Then** there is a delay of approximately 200ms between each iteration.
 
 ---
 
@@ -101,7 +101,7 @@ The Logger runs as a continuous async loop: read batch, transform, persist, wait
 - **FR-004**: Logger MUST create one pending transaction per inferred transaction, setting `is_reviewed = false` and `actual_fraud = None`.
 - **FR-005**: Logger MUST preserve all fields from the source inferred transaction in the resulting pending transaction (id, amount, last_name, predicted_fraud, model_name, model_version).
 - **FR-006**: Logger MUST write each batch of pending transactions to Storage through a hexagonal port (storage trait), with no dependency on Storage implementation.
-- **FR-007**: Logger MUST operate at speed3, defined as a configurable delay (duration) between processing iterations.
+- **FR-007**: Logger MUST operate every poll_interval3, defined as a configurable delay (duration) between processing iterations.
 - **FR-008**: Logger MUST run indefinitely by default (no iteration limit). An optional iteration limit MAY be configured for testing.
 - **FR-009**: Logger MUST stop gracefully when Buffer2 is closed and fully drained, returning success (not an error).
 - **FR-010**: Logger MUST propagate errors from Buffer2 (`BufferError`) and Storage (`StorageError`) ports to the caller immediately.
@@ -113,7 +113,7 @@ The Logger runs as a continuous async loop: read batch, transform, persist, wait
 - **Buffer2Read**: Hexagonal port for reading batches of inferred transactions from the second buffer. Symmetric to Buffer1Read.
 - **Storage**: Hexagonal port for writing batches of pending transactions to a persistent store. The Logger depends exclusively on this trait. Returns `StorageError` (not `BufferError`) with variants `CapacityExceeded` and `Unavailable`.
 - **StorageError**: Dedicated error enum for the Storage port. Variants: `CapacityExceeded { capacity: usize }` (store is full), `Unavailable` (store is closed/unreachable). Distinct from `BufferError` to reinforce the conceptual boundary between buffers and storage.
-- **LoggerConfig**: Configuration for the Logger. Contains N3_MAX (maximum batch size), speed3 (delay between iterations), and an optional iteration limit.
+- **LoggerConfig**: Configuration for the Logger. Contains N3_MAX (maximum batch size), poll_interval3 (delay between iterations), and an optional iteration limit.
 
 ## Success Criteria
 
@@ -128,7 +128,7 @@ The Logger runs as a continuous async loop: read batch, transform, persist, wait
 
 ## Assumptions
 
-- **speed3** follows the same pattern as Producer's speed1 and Consumer's speed2: a configurable async delay (duration) inserted between processing iterations.
+- **poll_interval3** follows the same pattern as Producer's poll_interval1 and Consumer's poll_interval2: a configurable async delay (duration) inserted between processing iterations.
 - **Buffer2Read** is a new trait in the domain crate, symmetric to Buffer1Read, returning batches of `InferredTransaction`.
 - **Storage** is a new trait in the domain crate for writing batches of `PendingTransaction`. It uses a dedicated `StorageError` enum (`CapacityExceeded`, `Unavailable`) rather than reusing `BufferError`.
 - **PendingTransaction** is a new domain type in the domain crate using composition: `PendingTransaction { inferred_transaction: InferredTransaction, is_reviewed: bool, actual_fraud: Option<bool> }`.

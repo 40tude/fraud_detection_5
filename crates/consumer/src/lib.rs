@@ -47,7 +47,7 @@ pub struct ConsumerConfig {
     /// Maximum number of transactions per batch (range: `[1, n2_max]`).
     pub n2_max: usize,
     /// Delay between successive batch-processing iterations.
-    pub speed2: Duration,
+    pub poll_interval2: Duration,
     /// Optional upper bound on the number of iterations. `None` means infinite.
     pub iterations: Option<u64>,
     /// Optional RNG seed for reproducible batch sizes. `None` seeds from the OS.
@@ -60,7 +60,7 @@ pub struct ConsumerConfig {
 #[derive(Debug)]
 pub struct ConsumerConfigBuilder {
     n2_max: usize,
-    speed2: Duration,
+    poll_interval2: Duration,
     iterations: Option<u64>,
     seed: Option<u64>,
 }
@@ -68,13 +68,13 @@ pub struct ConsumerConfigBuilder {
 impl ConsumerConfig {
     /// Create a builder. `n2_max` is the only required parameter.
     ///
-    /// Default values: `speed2 = 100 ms`, `iterations = None`, `seed = None`.
+    /// Default values: `poll_interval2 = 100 ms`, `iterations = None`, `seed = None`.
     #[must_use]
     pub fn builder(n2_max: usize) -> ConsumerConfigBuilder {
         ConsumerConfigBuilder {
             n2_max,
             // 100 ms chosen as a reasonable demo cadence; lower for tests.
-            speed2: Duration::from_millis(100),
+            poll_interval2: Duration::from_millis(100),
             iterations: None,
             seed: None,
         }
@@ -84,8 +84,8 @@ impl ConsumerConfig {
 impl ConsumerConfigBuilder {
     /// Override the inter-iteration delay.
     #[must_use]
-    pub fn speed2(mut self, speed2: Duration) -> Self {
-        self.speed2 = speed2;
+    pub fn poll_interval2(mut self, poll_interval2: Duration) -> Self {
+        self.poll_interval2 = poll_interval2;
         self
     }
 
@@ -118,7 +118,7 @@ impl ConsumerConfigBuilder {
         }
         Ok(ConsumerConfig {
             n2_max: self.n2_max,
-            speed2: self.speed2,
+            poll_interval2: self.poll_interval2,
             iterations: self.iterations,
             seed: self.seed,
         })
@@ -200,7 +200,7 @@ impl Consumer {
 
     /// Run the consumption loop until stopped.
     ///
-    /// Calls [`consume_once`](Self::consume_once) repeatedly, sleeping `speed2`
+    /// Calls [`consume_once`](Self::consume_once) repeatedly, sleeping `poll_interval2`
     /// between iterations. Stops cleanly when:
     /// - Buffer1 signals [`BufferError::Closed`] (returns `Ok(())`), or
     /// - `config.iterations` batches have been processed (returns `Ok(())`).
@@ -250,7 +250,7 @@ impl Consumer {
                 return Ok(());
             }
 
-            tokio::time::sleep(self.config.speed2).await;
+            tokio::time::sleep(self.config.poll_interval2).await;
         }
     }
 
@@ -305,7 +305,7 @@ mod tests {
         Consumer::new(
             ConsumerConfig::builder(n2_max)
                 .seed(seed)
-                .speed2(Duration::ZERO)
+                .poll_interval2(Duration::ZERO)
                 .build()
                 .unwrap(),
         )
@@ -472,9 +472,9 @@ mod tests {
     }
 
     #[test]
-    fn builder_defaults_speed2() {
+    fn builder_defaults_poll_interval2() {
         let config = ConsumerConfig::builder(10).build().unwrap();
-        assert_eq!(config.speed2, Duration::from_millis(100));
+        assert_eq!(config.poll_interval2, Duration::from_millis(100));
     }
 
     #[test]
@@ -553,7 +553,7 @@ mod tests {
             ConsumerConfig::builder(10)
                 .seed(7)
                 .iterations(3)
-                .speed2(Duration::ZERO)
+                .poll_interval2(Duration::ZERO)
                 .build()
                 .unwrap(),
         );

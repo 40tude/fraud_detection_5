@@ -78,7 +78,7 @@ pub struct PendingTransaction {
 
 ## R6: LoggerConfig Builder Pattern
 
-**Decision**: `LoggerConfig` + `LoggerConfigBuilder` following the exact `ProducerConfig`/`ConsumerConfig` builder pattern. Fields: `n3_max: usize`, `speed3: Duration`, `iterations: Option<u64>`, `seed: Option<u64>`.
+**Decision**: `LoggerConfig` + `LoggerConfigBuilder` following the exact `ProducerConfig`/`ConsumerConfig` builder pattern. Fields: `n3_max: usize`, `poll_interval3: Duration`, `iterations: Option<u64>`, `seed: Option<u64>`.
 
 **Rationale**: Consistency with established crate patterns. Rejects `n3_max == 0` in `build()`.
 

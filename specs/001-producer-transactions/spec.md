@@ -3,7 +3,7 @@
 **Feature Branch**: `001-producer-transactions`
 **Created**: 2026-02-21
 **Status**: Draft
-**Input**: User description: "Producer simulates transactions coming from the outside world. Producer generates and writes batches of transactions at speed1. Batches are of size N1 which vary at each iteration [1, N1_MAX]. In a first version a transaction schema = {UUID, amount, last_name, ...}. The transaction schema will change."
+**Input**: User description: "Producer simulates transactions coming from the outside world. Producer generates and writes batches of transactions every poll_interval1. Batches are of size N1 which vary at each iteration [1, N1_MAX]. In a first version a transaction schema = {UUID, amount, last_name, ...}. The transaction schema will change."
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -64,11 +64,11 @@ back from the adapter and verify the data matches.
 
 ---
 
-### User Story 3 -- Continuous Production at speed1 (Priority: P2)
+### User Story 3 -- Continuous Production every poll_interval1 (Priority: P2)
 
 The Producer runs in a loop, generating and writing batches
 continuously. Between each iteration, the Producer sleeps for a
-configurable duration (speed1). Each iteration produces a batch of
+configurable duration (poll_interval1). Each iteration produces a batch of
 random size within [1, N1_MAX].
 
 **Why this priority**: Builds on US1 and US2. Continuous production
@@ -105,7 +105,7 @@ cleanly.
 
 ### Session 2026-02-21
 
-- Q: What does "speed1" mean concretely? → A: Configurable sleep duration between batch iterations (e.g., 100ms between batches).
+- Q: What does "poll_interval1" mean concretely? → A: Configurable sleep duration between batch iterations (e.g., 100ms between batches).
 - Q: Should the Producer's random generation be reproducible (seedable RNG)? → A: Yes, seedable RNG -- configurable seed for deterministic tests, random seed in production.
 - Q: What range should generated amount values cover? → A: Currency-like floats, 0.01 to 10,000.00, 2 decimal places.
 
@@ -126,7 +126,7 @@ cleanly.
   values MUST be rejected at startup.
 - **FR-006**: Producer MUST support continuous operation (loop) with
   configurable iteration count or indefinite mode. Between iterations,
-  the Producer MUST sleep for a configurable duration (speed1).
+  the Producer MUST sleep for a configurable duration (poll_interval1).
 - **FR-007**: Producer MUST handle buffer backpressure as defined by
   the Buffer1 trait contract.
 - **FR-008**: Transaction field values (amount, last_name) MUST be

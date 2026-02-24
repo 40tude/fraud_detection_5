@@ -79,7 +79,7 @@ Write-side hexagonal port for persistent storage.
 | Field | Type | Default | Constraint |
 |-------|------|---------|------------|
 | `n3_max` | `usize` | (required) | >= 1 |
-| `speed3` | `Duration` | 100 ms | any |
+| `poll_interval3` | `Duration` | 100 ms | any |
 | `iterations` | `Option<u64>` | `None` | `None` = infinite |
 | `seed` | `Option<u64>` | `None` | `None` = OS-seeded |
 

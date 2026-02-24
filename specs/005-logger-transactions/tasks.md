@@ -59,7 +59,7 @@
 - [X] T012 [US1] Write failing test `test_log_once_batch_size_in_range`: N3_MAX=10, buffer with 100 items, call log_once() 20 times, assert each consumed batch size is in 1..=10 in `#[cfg(test)]` in crates/logger/src/lib.rs
 - [X] T013 [US1] Write failing test `test_log_once_batch_capped_at_available`: N3_MAX=20, buffer with 3 items, call log_once(), assert exactly 3 items consumed (capped at available count) in `#[cfg(test)]` in crates/logger/src/lib.rs
 - [X] T014 [US1] Write failing test `test_log_once_closed_empty_returns_error`: MockBuffer2Read closed+empty, call log_once(), assert Err(LoggerError::Read(BufferError::Closed)) in `#[cfg(test)]` in crates/logger/src/lib.rs
-- [X] T019 [US1] Write failing tests for LoggerConfig builder in crates/logger/src/lib.rs: `n3_max=5` builds Ok, `n3_max=0` returns Err(InvalidConfig), `speed3` default is 100ms, `speed3` setter overrides, `iterations` defaults to None, `seed` defaults to None
+- [X] T019 [US1] Write failing tests for LoggerConfig builder in crates/logger/src/lib.rs: `n3_max=5` builds Ok, `n3_max=0` returns Err(InvalidConfig), `poll_interval3` default is 100ms, `poll_interval3` setter overrides, `iterations` defaults to None, `seed` defaults to None
 - [X] T020 [US2] Write failing test `test_transform_preserves_all_fields`: 5 InferredTransactions with known fields, call log_once(), verify 5 PendingTransactions in storage each with `prediction_confirmed=false` and `inferred_transaction == original` in `#[cfg(test)]` in crates/logger/src/lib.rs
 - [X] T021 [US2] Write failing test `test_transform_predicted_fraud_true_preserved`: InferredTransaction with `predicted_fraud=true`, call log_once(), assert resulting PendingTransaction has `inferred_transaction.predicted_fraud=true` and `prediction_confirmed=false` in `#[cfg(test)]` in crates/logger/src/lib.rs
 - [X] T022 [US2] Write failing test `test_transform_predicted_fraud_false_preserved`: InferredTransaction with `predicted_fraud=false`, call log_once(), assert both flags false and independent in `#[cfg(test)]` in crates/logger/src/lib.rs
@@ -70,7 +70,7 @@
 ### Step 2 -- Implement production code to make all tests pass (T015-T018)
 
 - [X] T015 [US1] Add LoggerError to crates/logger/src/lib.rs: `#[derive(Debug, thiserror::Error)]`, variants `InvalidConfig { reason: String }`, `Read(#[from] BufferError)`, `Write(#[from] StorageError)`
-- [X] T016 [US1] Add LoggerConfig struct and LoggerConfigBuilder to crates/logger/src/lib.rs: LoggerConfig fields `n3_max: usize`, `speed3: Duration` (default 100ms), `iterations: Option<u64>`, `seed: Option<u64>`; `#[must_use] builder(n3_max: usize) -> LoggerConfigBuilder`; setter methods `speed3`, `iterations`, `seed`; `#[must_use] build() -> Result<LoggerConfig, LoggerError>` rejecting `n3_max == 0` with `InvalidConfig`
+- [X] T016 [US1] Add LoggerConfig struct and LoggerConfigBuilder to crates/logger/src/lib.rs: LoggerConfig fields `n3_max: usize`, `poll_interval3: Duration` (default 100ms), `iterations: Option<u64>`, `seed: Option<u64>`; `#[must_use] builder(n3_max: usize) -> LoggerConfigBuilder`; setter methods `poll_interval3`, `iterations`, `seed`; `#[must_use] build() -> Result<LoggerConfig, LoggerError>` rejecting `n3_max == 0` with `InvalidConfig`
 - [X] T017 [US1] Add Logger struct to crates/logger/src/lib.rs: `#[derive(Debug)]`, fields `config: LoggerConfig` and `rng: RefCell<StdRng>`; `#[must_use] new(config: LoggerConfig) -> Self` seeding via `config.seed.map(StdRng::seed_from_u64).unwrap_or_else(StdRng::from_os_rng)`
 - [X] T018 [US1] Implement `Logger::log_once<B: Buffer2Read, S: Storage>(&self, buf2: &B, storage: &S) -> Result<(), LoggerError>` in crates/logger/src/lib.rs: compute `n3 = rng.borrow_mut().random_range(1..=n3_max)`, call `read_batch(n3)`, map each `InferredTransaction` to `PendingTransaction { inferred_transaction: tx, prediction_confirmed: false }`, call `write_batch(batch)`
 
@@ -102,7 +102,7 @@
 
 ## Phase 6: User Story 4 - Continuous Async Loop (Priority: P1)
 
-**Goal**: run() loops read-transform-persist with speed3 delay; stops gracefully returning Ok(()) when Buffer2 is closed+drained; optional iteration limit for testing
+**Goal**: run() loops read-transform-persist with poll_interval3 delay; stops gracefully returning Ok(()) when Buffer2 is closed+drained; optional iteration limit for testing
 
 **Independent Test**: iterations=3, buffer with 30 items, run() returns Ok(()), MockStorage has exactly 3 batches worth of items; no-limit run stops cleanly after buffer closes
 
@@ -112,11 +112,11 @@
 
 - [X] T027 [US4] Write failing test `test_run_iteration_limit`: Logger with `iterations=Some(3)`, MockBuffer2Read with 30 items, call run(), assert Ok(()) and MockStorage item count equals sum of 3 batches in `#[cfg(test)]` in crates/logger/src/lib.rs
 - [X] T028 [US4] Write failing test `test_run_stops_on_closed`: Logger with `iterations=None`, MockBuffer2Read pre-loaded with 5 batches then closed, call run(), assert Ok(()) in `#[cfg(test)]` in crates/logger/src/lib.rs
-- [X] T029 [US4] Write failing test `test_run_zero_delay`: Logger with `speed3=Duration::ZERO`, `iterations=Some(2)`, buffer with 20 items, call run(), assert Ok(()) completes without panic in `#[cfg(test)]` in crates/logger/src/lib.rs
+- [X] T029 [US4] Write failing test `test_run_zero_delay`: Logger with `poll_interval3=Duration::ZERO`, `iterations=Some(2)`, buffer with 20 items, call run(), assert Ok(()) completes without panic in `#[cfg(test)]` in crates/logger/src/lib.rs
 
 ### Implementation for User Story 4
 
-- [X] T030 [US4] Implement `Logger::run<B: Buffer2Read, S: Storage>(&self, buf2: &B, storage: &S) -> Result<(), LoggerError>` in crates/logger/src/lib.rs: loop calling log_once(); on `Err(LoggerError::Read(BufferError::Closed))` break Ok(()); propagate all other errors; call `tokio::time::sleep(config.speed3)`; break when iteration counter reaches `config.iterations`
+- [X] T030 [US4] Implement `Logger::run<B: Buffer2Read, S: Storage>(&self, buf2: &B, storage: &S) -> Result<(), LoggerError>` in crates/logger/src/lib.rs: loop calling log_once(); on `Err(LoggerError::Read(BufferError::Closed))` break Ok(()); propagate all other errors; call `tokio::time::sleep(config.poll_interval3)`; break when iteration counter reaches `config.iterations`
 - [X] T031 [US4] Add `log::info!` in run() per quickstart.md and FR-011 (iteration number half) in crates/logger/src/lib.rs: emit `"logger.batch.persisted: iteration={n}"` after each successful log_once() call
 - [X] T032 [US4] Add `log::info!` in run() on graceful exit in crates/logger/src/lib.rs: emit `"logger.run.stopped: buffer closed after {n} iteration(s)"` matching quickstart.md format
 
@@ -152,7 +152,7 @@
 **Purpose**: Wire Logger into main.rs; replace InMemoryBuffer2 with ConcurrentBuffer2; consumer arm closes buffer2 on completion to cascade Logger shutdown
 
 - [X] T041 Replace InMemoryBuffer2 with `ConcurrentBuffer2::new()` as `buffer2` in crates/fraud_detection/src/main.rs; update Consumer call to pass `&buffer2` as Buffer2 write port; update imports; confirm main.rs uses `anyhow::Result` in return type (carried from feature 004); InMemoryBuffer2 is no longer used in binary -- retain as test-only infrastructure (it already follows the InMemoryBuffer pattern of test-only usage; add `#[expect(dead_code, reason="test-only adapter")]` on struct and new() if dead_code warnings appear)
-- [X] T042 Instantiate `InMemoryStorage::new(usize::MAX)` and build `LoggerConfig` via `LoggerConfig::builder(n3_max).speed3(...).build()?` and `Logger::new(logger_config)` in crates/fraud_detection/src/main.rs
+- [X] T042 Instantiate `InMemoryStorage::new(usize::MAX)` and build `LoggerConfig` via `LoggerConfig::builder(n3_max).poll_interval3(...).build()?` and `Logger::new(logger_config)` in crates/fraud_detection/src/main.rs
 - [X] T043 Add `logger.run(&buffer2, &storage)` as third arm in the `tokio::join!` pipeline alongside producer and consumer in crates/fraud_detection/src/main.rs
 - [X] T044 Restructure pipeline async block in crates/fraud_detection/src/main.rs to implement R8 shutdown cascade; replace the current 2-arm join with: `let consumer_then_close = async { let r = consumer.run(&buffer1, &buffer2).await; buffer2.close(); r }; let pipeline = async { let (p, c, l) = tokio::join!(producer.run(&buffer1), consumer_then_close, logger.run(&buffer2, &storage)); p.and(c).and(l) };` -- on CTRL+C only buffer1.close() is needed (buffer2 cascade follows automatically)
 - [X] T045 Verify CTRL+C shutdown path in crates/fraud_detection/src/main.rs: `tokio::select!` branch calls only `buffer1.close()`; buffer2 closes via cascade in consumer_then_close; all three join arms resolve cleanly

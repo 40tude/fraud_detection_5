@@ -3,7 +3,7 @@
 **Feature Branch**: `003-modelizer-inference`
 **Created**: 2026-02-23
 **Status**: Draft
-**Input**: User description: "Modelizer receives batches of transactions from Consumer at speed2. Batches are of size N2 which vary at each iteration [1, N2_MAX]. Modelizer sends back batches of inferred transactions. inferenced_transactions = transactions + {inference (T/F), model_name, version_num}. Consumer can select the revision of the model to be used to make the inferences. Only version N and N-1 are available. By default, the Modelizer uses the latest version of the Model. Modelizer simulates calls to the Model in charge of the inference. In a first version the Model can: Be named 'DEMO', Propose versions 3 and 4, Which respectively detect fraudulent transactions 3% and 4% of the time."
+**Input**: User description: "Modelizer receives batches of transactions from Consumer every poll_interval2. Batches are of size N2 which vary at each iteration [1, N2_MAX]. Modelizer sends back batches of inferred transactions. inferenced_transactions = transactions + {inference (T/F), model_name, version_num}. Consumer can select the revision of the model to be used to make the inferences. Only version N and N-1 are available. By default, the Modelizer uses the latest version of the Model. Modelizer simulates calls to the Model in charge of the inference. In a first version the Model can: Be named 'DEMO', Propose versions 3 and 4, Which respectively detect fraudulent transactions 3% and 4% of the time."
 
 ## User Scenarios & Testing
 
@@ -131,5 +131,5 @@ The DEMO model classifies transactions as fraudulent based on a configurable pro
 - The existing `Modelizer` trait in the domain crate and the `InferredTransaction` / `ModelVersion` types are reused as-is.
 - The DEMO model version numbers (3 and 4) are presented as strings ("3" and "4") in the `model_version` field of `InferredTransaction`.
 - The existing `DemoModelizer` adapter in the `fraud_detection` crate will be removed and replaced by: (1) a generic Modelizer component in the `modelizer` lib crate, and (2) a DEMO Model adapter in the `fraud_detection` binary crate.
-- "speed2" refers to the Consumer's iteration cadence; the Modelizer itself does not manage its own pacing (it responds synchronously to Consumer calls via the trait).
+- "poll_interval2" refers to the Consumer's iteration cadence; the Modelizer itself does not manage its own pacing (it responds synchronously to Consumer calls via the trait).
 - Batch sizes are determined by the Consumer (already implemented in feature 002); the Modelizer processes whatever batch size it receives.

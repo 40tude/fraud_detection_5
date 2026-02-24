@@ -44,7 +44,7 @@ Configuration for the Producer component. Defined in `producer` crate.
 | Field | Type | Constraints | Default |
 |-------|------|-------------|---------|
 | `n1_max` | `usize` | >= 1, required | none (mandatory) |
-| `speed1` | `Duration` | >= 0 | 100ms |
+| `poll_interval1` | `Duration` | >= 0 | 100ms |
 | `iterations` | `Option<usize>` | `None` = infinite, `Some(n)` = n iterations | `None` |
 | `seed` | `Option<u64>` | `None` = random, `Some(s)` = deterministic | `None` |
 

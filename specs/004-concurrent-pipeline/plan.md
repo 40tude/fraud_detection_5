@@ -100,7 +100,7 @@ demo_model, log_alarm).
    Ok(())
    ```
 7. Remove iteration limit from `ProducerConfig` in `main.rs` (infinite by default).
-8. Set `speed2` to a nonzero value (e.g., 25 ms) so Consumer yields regularly.
+8. Set `poll_interval2` to a nonzero value (e.g., 25 ms) so Consumer yields regularly.
 
 ### Phase D -- Validate
 

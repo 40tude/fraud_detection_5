@@ -40,7 +40,7 @@
 - [ ] CHK019 - Is InferredTransaction's structural relationship to Transaction (composition wrapping vs. flat struct with copied fields) specified in the entity definition? [Clarity, Spec §Key Entities - InferredTransaction]
 - [ ] CHK020 - Are ModelVersion's two variants (N, NMinus1) specified as the exhaustive closed set, or is extensibility left open? [Completeness, Spec §Key Entities - ModelVersion]
 - [ ] CHK021 - Is the string format or valid-value contract for `model_name` and `model_version` fields in InferredTransaction specified? [Clarity, Spec §Key Entities - InferredTransaction]
-- [ ] CHK022 - Does ConsumerConfig specify all required fields and their valid ranges, including defaults for optional fields (speed2, iterations, seed)? [Completeness, Spec §Key Entities - ConsumerConfig]
+- [ ] CHK022 - Does ConsumerConfig specify all required fields and their valid ranges, including defaults for optional fields (poll_interval2, iterations, seed)? [Completeness, Spec §Key Entities - ConsumerConfig]
 
 ---
 
@@ -57,7 +57,7 @@
 
 - [ ] CHK027 - Is the behavior specified when N2_MAX is configured as 0 -- which error type is raised and at which point (config validation vs. runtime)? [Completeness, Spec §FR-003]
 - [ ] CHK028 - Are requirements defined for a batch where all transactions are fraudulent (100% alarm trigger rate), and its effect on timing/throughput guarantees? [Coverage, Gap]
-- [ ] CHK029 - Is Consumer behavior specified when speed2 is set to zero (no delay between iterations), particularly regarding Buffer1 pressure? [Coverage, Gap]
+- [ ] CHK029 - Is Consumer behavior specified when poll_interval2 is set to zero (no delay between iterations), particularly regarding Buffer1 pressure? [Coverage, Gap]
 
 ---
 

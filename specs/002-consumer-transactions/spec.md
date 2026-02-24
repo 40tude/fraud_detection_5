@@ -3,7 +3,7 @@
 **Feature Branch**: `002-consumer-transactions`
 **Created**: 2026-02-22
 **Status**: Draft
-**Input**: User description: "Consumer extracts from Buffer1 batches of transactions at speed2. Batches are of size N2 which vary at each iteration [1, N2_MAX]. Consumer sends each batch to Modelizer (implementation unknown). When batch returned from Modelizer, Consumer generates alarm for every transaction marked as fraudulent (alarm implementation unknown). Consumer then writes processed batch into Buffer2 (implementation unknown). At any time, Consumer can switch model version (N or N-1) used by Modelizer."
+**Input**: User description: "Consumer extracts from Buffer1 batches of transactions every poll_interval2. Batches are of size N2 which vary at each iteration [1, N2_MAX]. Consumer sends each batch to Modelizer (implementation unknown). When batch returned from Modelizer, Consumer generates alarm for every transaction marked as fraudulent (alarm implementation unknown). Consumer then writes processed batch into Buffer2 (implementation unknown). At any time, Consumer can switch model version (N or N-1) used by Modelizer."
 
 ## Clarifications
 
@@ -16,7 +16,7 @@
 
 ### User Story 1 - Read Batches from Buffer1 (Priority: P1)
 
-The Consumer reads variable-size batches of transactions from Buffer1. Each iteration, the batch size N2 is randomly chosen in [1, N2_MAX]. Reading happens at speed2 (a configurable delay between iterations). If Buffer1 is empty, the Consumer waits for data. If Buffer1 is closed and drained, the Consumer stops.
+The Consumer reads variable-size batches of transactions from Buffer1. Each iteration, the batch size N2 is randomly chosen in [1, N2_MAX]. Reading happens every poll_interval2 (a configurable delay between iterations). If Buffer1 is empty, the Consumer waits for data. If Buffer1 is closed and drained, the Consumer stops.
 
 **Why this priority**: Without reading from Buffer1, no downstream processing can occur. This is the entry point of the Consumer pipeline.
 
@@ -121,7 +121,7 @@ The Consumer can ask the Modelizer to switch between model version N (latest) an
 - **FR-008**: Consumer MUST ask the Modelizer to switch version between N and N-1 at runtime, through the Modelizer hexagonal port. The Modelizer owns its version state.
 - **FR-009**: Modelizer MUST default to model version N (latest) at startup.
 - **FR-010**: A model version switch issued by the Consumer MUST take effect on the next batch inferred by the Modelizer, not the current in-flight batch.
-- **FR-011**: Consumer MUST operate at speed2, defined as a configurable delay between processing iterations.
+- **FR-011**: Consumer MUST operate every poll_interval2, defined as a configurable delay between processing iterations.
 - **FR-012**: Consumer MUST stop gracefully when Buffer1 is closed and fully drained.
 - **FR-013**: Consumer MUST propagate errors from Buffer1, Modelizer, and Buffer2 ports to the caller immediately. Alarm errors MUST be collected across the batch and reported after Buffer2 write completes.
 
@@ -129,7 +129,7 @@ The Consumer can ask the Modelizer to switch between model version N (latest) an
 
 - **InferredTransaction**: A transaction enriched with inference results. Carries all fields of Transaction plus `predicted_fraud` (boolean), `model_name` (string), and `model_version` (string). Represents the output of the Modelizer.
 - **ModelVersion**: Represents the selectable model version. Two variants: N (latest) and N-1 (previous).
-- **ConsumerConfig**: Configuration for the Consumer. Contains N2_MAX (maximum batch size) and speed2 (delay between iterations), plus optional iteration limit.
+- **ConsumerConfig**: Configuration for the Consumer. Contains N2_MAX (maximum batch size) and poll_interval2 (delay between iterations), plus optional iteration limit.
 - **Buffer1 (read side)**: Hexagonal port for reading batches of transactions from the first buffer.
 - **Buffer2 (write side)**: Hexagonal port for writing batches of inferred transactions to the second buffer.
 - **Modelizer**: Hexagonal port for sending a batch of transactions and receiving inferred transactions. Also exposes a version-switch command; the Modelizer owns its version state internally.
@@ -148,7 +148,7 @@ The Consumer can ask the Modelizer to switch between model version N (latest) an
 
 ## Assumptions
 
-- **speed2** follows the same pattern as Producer's speed1: a configurable async delay (duration) inserted between processing iterations.
+- **poll_interval2** follows the same pattern as Producer's poll_interval1: a configurable async delay (duration) inserted between processing iterations.
 - **"At any time"** for model version switching means between iterations, not mid-batch. The switch method can be called at any point, but it only affects the next iteration.
 - **Buffer1 read port** is a new trait separate from the existing `Buffer1` write trait. The read side returns batches of up to N requested transactions.
 - **InferredTransaction** is a new domain type distinct from `Transaction`, defined in the domain crate.
