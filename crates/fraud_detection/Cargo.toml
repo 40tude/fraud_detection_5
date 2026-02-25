@@ -11,6 +11,10 @@ path = "src/main.rs"
 name = "fraud_detection_sqlite"
 path = "src/main_sqlite.rs"
 
+[[bin]]
+name = "fraud_detection_bench"
+path = "src/bench_main.rs"
+
 [lints]
 workspace = true
 

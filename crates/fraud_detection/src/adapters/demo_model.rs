@@ -16,6 +16,10 @@ use rand::{Rng, SeedableRng, rngs::StdRng};
 /// Maps `ModelVersion::N` to version `"4"` and `ModelVersion::NMinus1` to `"3"`.
 /// Starts at `ModelVersion::N` per FR-007. Fraud detection is probabilistic:
 /// `"4"` detects ~4% fraud, `"3"` detects ~3% (FR-005, FR-006).
+// #[allow] not #[expect]: dead_code fires in fraud_detection_bench binary but
+// NOT in fraud_detection / fraud_detection_sqlite, so #[expect] would generate
+// an unfulfilled-expectation warning in those binaries.
+#[allow(dead_code, reason = "used by fraud_detection and fraud_detection_sqlite; dead in fraud_detection_bench")]
 #[derive(Debug)]
 pub struct DemoModel {
     /// Currently active version; interior mutability required (trait takes `&self`).
@@ -29,6 +33,8 @@ impl DemoModel {
     ///
     /// `seed = Some(s)` produces deterministic results; `None` seeds from the OS.
     /// Starts with `ModelVersion::N` (version 4) per FR-007.
+    // See struct-level allow(dead_code) comment above.
+    #[allow(dead_code, reason = "used by fraud_detection and fraud_detection_sqlite; dead in fraud_detection_bench")]
     #[must_use]
     pub fn new(seed: Option<u64>) -> Self {
         let rng = match seed {
@@ -43,6 +49,8 @@ impl DemoModel {
     }
 
     /// Fraud probability for the currently active version.
+    // See struct-level allow(dead_code) comment above.
+    #[allow(dead_code, reason = "used by fraud_detection and fraud_detection_sqlite; dead in fraud_detection_bench")]
     fn fraud_rate(&self) -> f64 {
         match *self.current_version.borrow() {
             ModelVersion::N => 0.04,       // FR-006: version 4 detects ~4%
