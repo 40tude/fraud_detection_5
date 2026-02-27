@@ -9,7 +9,7 @@ workspace = true
 [dependencies]
 domain    = { path = "../domain" }
 thiserror = { workspace = true }
-log       = { workspace = true }
+tracing   = { workspace = true }
 rand      = { workspace = true }
 tokio     = { workspace = true }
 

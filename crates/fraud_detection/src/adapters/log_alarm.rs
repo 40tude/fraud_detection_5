@@ -1,8 +1,8 @@
-// Rust guideline compliant 2026-02-16
+// Rust guideline compliant 2026-02-27
 
 //! Demo adapter for the `Alarm` port.
 //!
-//! Logs fraud alerts via `log::warn!` and always returns `Ok(())`.
+//! Logs fraud alerts via `tracing::warn!` and always returns `Ok(())`.
 //! `AlarmError::DeliveryFailed` is unreachable in this demo adapter.
 
 use domain::{Alarm, AlarmError, InferredTransaction};
@@ -29,7 +29,7 @@ impl Default for LogAlarm {
 
 impl Alarm for LogAlarm {
     async fn trigger(&self, transaction: &InferredTransaction) -> Result<(), AlarmError> {
-        log::warn!("log_alarm.fraud_alert: transaction_id={}", transaction.id());
+        tracing::warn!(transaction_id = %transaction.id(), "log_alarm.fraud_alert");
         Ok(())
     }
 }

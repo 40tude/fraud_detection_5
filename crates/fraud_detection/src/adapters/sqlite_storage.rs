@@ -1,8 +1,8 @@
-// Rust guideline compliant 2026-02-16
+// Rust guideline compliant 2026-02-27
 
-//! SQLite adapter for the `Storage` port (demo).
+//! `SQLite` adapter for the `Storage` port (demo).
 //!
-//! Persists `PendingTransaction` rows to a SQLite file via `sqlx`.
+//! Persists `PendingTransaction` rows to a `SQLite` file via `sqlx`.
 //! Proves that the hexagonal `Storage` port is truly swappable without
 //! touching domain or pipeline crates.
 //!
@@ -23,9 +23,9 @@
 
 use domain::{PendingTransaction, Storage, StorageError};
 
-/// `Storage` adapter backed by a SQLite database file via `sqlx`.
+/// `Storage` adapter backed by a `SQLite` database file via `sqlx`.
 ///
-/// Connects to (or creates) a SQLite file and ensures the
+/// Connects to (or creates) a `SQLite` file and ensures the
 /// `pending_transactions` table exists. Duplicate UUIDs are silently
 /// overwritten (INSERT OR REPLACE -- see module-level note).
 #[derive(Debug, Clone)]
@@ -34,7 +34,7 @@ pub struct SqliteStorage {
 }
 
 impl SqliteStorage {
-    /// Open or create a SQLite database and initialize the schema.
+    /// Open or create a `SQLite` database and initialize the schema.
     ///
     /// Passes `create_if_missing(true)` so the database file is created on
     /// first run without manual setup. The `pending_transactions` table is
@@ -43,7 +43,6 @@ impl SqliteStorage {
     /// # Errors
     ///
     /// Returns `sqlx::Error` when the connection or schema creation fails.
-    #[must_use]
     pub async fn new(db_url: &str) -> Result<Self, sqlx::Error> {
         // create_if_missing: sqlx 0.8 defaults to false for file databases;
         // enable explicitly so the demo works out of the box on first run.
@@ -70,11 +69,11 @@ impl SqliteStorage {
 }
 
 impl Storage for SqliteStorage {
-    /// Persist each item in `batch` to the SQLite `pending_transactions` table.
+    /// Persist each item in `batch` to the `SQLite` `pending_transactions` table.
     ///
     /// Uses `INSERT OR REPLACE` -- duplicate UUIDs are silently overwritten
     /// (see module-level note). `actual_fraud` maps `Option<bool>` to a
-    /// nullable SQLite INTEGER: `None` = NULL, `Some(false)` = 0, `Some(true)` = 1.
+    /// nullable `SQLite` INTEGER: `None` = NULL, `Some(false)` = 0, `Some(true)` = 1.
     ///
     /// # Errors
     ///
@@ -105,7 +104,7 @@ impl Storage for SqliteStorage {
             .execute(&self.pool)
             .await
             .map_err(|e| {
-                log::error!("sqlite.write_batch: {e}");
+                tracing::error!("sqlite.write_batch: {e}");
                 StorageError::Unavailable
             })?;
         }
@@ -124,13 +123,13 @@ mod tests {
     use uuid::Uuid;
 
     // Each test calls make_storage() which opens a fresh SqlitePool backed by
-    // an in-memory SQLite database.  Because every call constructs a new pool
+    // an in-memory `SQLite` database.  Because every call constructs a new pool
     // (and therefore a new in-memory DB), tests are fully isolated with no
     // on-disk side-effects.
     async fn make_storage() -> SqliteStorage {
         SqliteStorage::new("sqlite::memory:")
             .await
-            .expect("in-memory SQLite should open")
+            .expect("in-memory `SQLite` should open")
     }
 
     fn make_pending(id: Uuid, actual_fraud: Option<bool>) -> PendingTransaction {

@@ -43,12 +43,12 @@ impl Model for BenchModel {
     }
 
     /// Returns `"BENCH"`.
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "BENCH"
     }
 
     /// Returns `"1"`.
-    fn active_version(&self) -> &str {
+    fn active_version(&self) -> &'static str {
         "1"
     }
 

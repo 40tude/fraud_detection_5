@@ -1,4 +1,4 @@
-// Rust guideline compliant 2026-02-16
+// Rust guideline compliant 2026-02-27
 
 //! Producer component -- generates random transaction batches and writes them
 //! to a `Buffer1` hexagonal port.
@@ -200,9 +200,10 @@ impl Producer {
     /// # Errors
     ///
     /// Propagates any [`BufferError`] wrapped in [`ProducerError::Buffer`].
+    #[tracing::instrument(skip(self, buffer), level = "debug")]
     pub async fn produce_once<B: Buffer1>(&self, buffer: &B) -> Result<(), ProducerError> {
         let batch = self.generate_batch();
-        log::debug!("producer.batch.generated: size={}", batch.len());
+        tracing::debug!(size = batch.len(), "producer.batch.generated");
         buffer.write_batch(batch).await?;
         Ok(())
     }
@@ -217,6 +218,7 @@ impl Producer {
     /// # Errors
     ///
     /// Returns [`ProducerError::Buffer`] for any buffer error other than `Closed`.
+    #[tracing::instrument(name = "producer.run", skip_all)]
     pub async fn run<B: Buffer1>(&self, buffer: &B) -> Result<(), ProducerError> {
         let mut count = 0u64;
         loop {
@@ -225,19 +227,19 @@ impl Producer {
                 Err(ProducerError::Buffer {
                     source: BufferError::Closed,
                 }) => {
-                    log::info!("producer.run.stopped: buffer closed after {count} iteration(s)");
+                    tracing::info!(count, "producer.run.stopped: buffer closed");
                     return Ok(());
                 }
                 Err(e) => return Err(e),
             }
 
             count += 1;
-            log::info!("producer.batch.written: iteration={count}");
+            tracing::info!(iteration = count, "producer.batch.written");
 
             if let Some(max) = self.config.iterations
                 && count >= max
             {
-                log::info!("producer.run.stopped: iteration limit reached");
+                tracing::info!("producer.run.stopped: iteration limit reached");
                 return Ok(());
             }
 

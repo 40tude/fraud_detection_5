@@ -1,4 +1,4 @@
-// Rust guideline compliant 2026-02-16
+// Rust guideline compliant 2026-02-27
 
 //! Consumer component -- reads transaction batches from Buffer1, runs inference,
 //! triggers fraud alarms, and writes results to Buffer2.
@@ -164,6 +164,7 @@ impl Consumer {
     /// Returns [`ConsumerError::Read`] on Buffer1 failure (including `Closed`),
     /// [`ConsumerError::Inference`] on Modelizer failure, or
     /// [`ConsumerError::Write`] on Buffer2 failure.
+    #[tracing::instrument(skip_all, level = "debug")]
     pub async fn consume_once<B1, M, A, B2>(
         &self,
         buf1: &B1,
@@ -180,7 +181,7 @@ impl Consumer {
         let n2 = self.rng.borrow_mut().random_range(1..=self.config.n2_max);
         let batch = buf1.read_batch(n2).await.map_err(ConsumerError::Read)?;
 
-        log::debug!("consumer.batch.read: size={}", batch.len());
+        tracing::debug!(size = batch.len(), "consumer.batch.read");
 
         let inferred = modelizer.infer(batch).await.map_err(ConsumerError::Inference)?;
 
@@ -210,6 +211,7 @@ impl Consumer {
     /// # Errors
     ///
     /// Returns [`ConsumerError`] for any hard error other than Buffer1 `Closed`.
+    #[tracing::instrument(name = "consumer.run", skip_all)]
     pub async fn run<B1, M, A, B2>(
         &self,
         buf1: &B1,
@@ -228,25 +230,23 @@ impl Consumer {
             match self.consume_once(buf1, modelizer, alarm, buf2).await {
                 Ok(alarm_errs) => {
                     for e in &alarm_errs {
-                        log::warn!("consumer.alarm.failed: error={e}");
+                        tracing::warn!(error = %e, "consumer.alarm.failed");
                     }
                 }
                 Err(ConsumerError::Read(BufferError::Closed)) => {
-                    log::info!(
-                        "consumer.run.stopped: buffer closed after {count} iteration(s)"
-                    );
+                    tracing::info!(count, "consumer.run.stopped: buffer closed");
                     return Ok(());
                 }
                 Err(e) => return Err(e),
             }
 
             count += 1;
-            log::info!("consumer.batch.processed: iteration={count}");
+            tracing::info!(iteration = count, "consumer.batch.processed");
 
             if let Some(max) = self.config.iterations
                 && count >= max
             {
-                log::info!("consumer.run.stopped: iteration limit reached");
+                tracing::info!("consumer.run.stopped: iteration limit reached");
                 return Ok(());
             }
 
@@ -261,6 +261,7 @@ impl Consumer {
     /// # Errors
     ///
     /// Returns [`ConsumerError::Inference`] if the switch fails.
+    #[tracing::instrument(skip(self, modelizer), fields(?version))]
     pub async fn switch_model_version<M: Modelizer>(
         &self,
         modelizer: &M,

@@ -1,6 +1,6 @@
-// Rust guideline compliant 2026-02-16
+// Rust guideline compliant 2026-02-27
 
-//! Logger crate: reads InferredTransaction batches from Buffer2, persists as PendingTransaction.
+//! Logger crate: reads `InferredTransaction` batches from Buffer2, persists as `PendingTransaction`.
 //!
 //! Entry points: [`Logger::log_once`], [`Logger::run`].
 //! Configuration via [`LoggerConfig::builder`].
@@ -160,13 +160,14 @@ impl Logger {
     ///
     /// Returns [`LoggerError::Read`] on buffer errors, or
     /// [`LoggerError::Write`] on storage errors.
+    #[tracing::instrument(skip_all, level = "debug")]
     pub async fn log_once<B: Buffer2Read, S: Storage>(
         &self,
         buf2: &B,
         storage: &S,
     ) -> Result<(), LoggerError> {
         let n3 = self.rng.borrow_mut().random_range(1..=self.config.n3_max);
-        log::debug!("logger.log_once: batch_size={n3}");
+        tracing::debug!(batch_size = n3, "logger.log_once");
         let batch: Vec<InferredTransaction> = buf2.read_batch(n3).await?;
         let pending: Vec<PendingTransaction> = batch
             .into_iter()
@@ -186,6 +187,7 @@ impl Logger {
     /// # Errors
     ///
     /// Returns [`LoggerError::Write`] for any storage error.
+    #[tracing::instrument(name = "logger.run", skip_all)]
     pub async fn run<B: Buffer2Read, S: Storage>(
         &self,
         buf2: &B,
@@ -196,21 +198,19 @@ impl Logger {
             match self.log_once(buf2, storage).await {
                 Ok(()) => {}
                 Err(LoggerError::Read(BufferError::Closed)) => {
-                    log::info!(
-                        "logger.run.stopped: buffer closed after {count} iteration(s)"
-                    );
+                    tracing::info!(count, "logger.run.stopped: buffer closed");
                     return Ok(());
                 }
                 Err(e) => return Err(e),
             }
 
             count += 1;
-            log::info!("logger.batch.persisted: iteration={count}");
+            tracing::info!(iteration = count, "logger.batch.persisted");
 
             if let Some(max) = self.config.iterations
                 && count >= max
             {
-                log::info!("logger.run.stopped: iteration limit reached");
+                tracing::info!("logger.run.stopped: iteration limit reached");
                 return Ok(());
             }
 

@@ -1,4 +1,4 @@
-// Rust guideline compliant 2026-02-16
+// Rust guideline compliant 2026-02-27
 
 //! Generic Modelizer component for the fraud-detection pipeline.
 //!
@@ -38,11 +38,11 @@ impl<M: Model> domain::Modelizer for Modelizer<M> {
     /// # Errors
     ///
     /// Returns `ModelizerError::InferenceFailed` if any `classify` call fails.
+    #[tracing::instrument(skip_all, fields(batch.size = batch.len()), level = "debug")]
     async fn infer(
         &self,
         batch: Vec<Transaction>,
     ) -> Result<Vec<InferredTransaction>, ModelizerError> {
-        log::debug!("modelizer.infer: batch_size={}", batch.len());
         // Read metadata once -- version is stable for the duration of this call.
         let model_name = self.model.name().to_owned();
         let model_version = self.model.active_version().to_owned();
@@ -65,8 +65,9 @@ impl<M: Model> domain::Modelizer for Modelizer<M> {
     /// # Errors
     ///
     /// Returns `ModelizerError::SwitchFailed` if the adapter rejects the switch.
+    #[tracing::instrument(skip(self), fields(?version))]
     async fn switch_version(&self, version: ModelVersion) -> Result<(), ModelizerError> {
-        log::info!("modelizer.switch_version: version={version:?}");
+        tracing::info!("modelizer.switch_version");
         self.model.switch_version(version).await
     }
 }

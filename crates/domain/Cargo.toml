@@ -9,5 +9,4 @@ workspace = true
 [dependencies]
 uuid      = { workspace = true }
 thiserror = { workspace = true }
-log       = { workspace = true }
 tokio     = { workspace = true }

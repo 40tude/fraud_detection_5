@@ -11,5 +11,5 @@ domain    = { path = "../domain" }
 uuid      = { workspace = true }
 rand      = { workspace = true }
 thiserror = { workspace = true }
-log       = { workspace = true }
+tracing   = { workspace = true }
 tokio     = { workspace = true }

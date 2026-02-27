@@ -19,8 +19,8 @@
 //!
 //! What is **not** measured: any real I/O, storage allocation, alarm delivery.
 //!
-//! No `env_logger::init()`: log macros compile to no-ops, eliminating log I/O
-//! overhead from measurements.
+//! No `tracing_subscriber` init: tracing macros compile to no-ops, eliminating
+//! log I/O overhead from measurements.
 //!
 //! # Usage
 //!
@@ -67,7 +67,7 @@ const ITERATIONS: u64 = 1_000;
 /// Number of pipeline runs averaged per batch size.
 const ROUNDS: u32 = 5;
 
-/// Batch sizes exercised. Applied uniformly to n1_max, n2_max, and n3_max.
+/// Batch sizes exercised. Applied uniformly to `n1_max`, `n2_max`, and `n3_max`.
 const BATCH_SIZES: &[usize] = &[1_000, 2_000, 5_000, 10_000, 20_000, 50_000, 100_000];
 
 // ---------------------------------------------------------------------------
@@ -160,6 +160,7 @@ async fn main() -> anyhow::Result<()> {
 
         for round in 0..ROUNDS {
             let (total_tx, elapsed) = run_bench(batch_size).await?;
+            #[expect(clippy::cast_precision_loss, reason = "total_tx count fits in f64 mantissa for realistic benchmarks")]
             let tps = total_tx as f64 / elapsed.as_secs_f64();
             if round == 0 {
                 total_tx_first = total_tx;
@@ -175,14 +176,17 @@ async fn main() -> anyhow::Result<()> {
 
         let avg_tps = sum_tps / f64::from(ROUNDS);
 
-        println!(
-            "{:>10} | {:>10} | {:>10} | {:>10} | {:>10}",
-            fmt_number(batch_size),
-            fmt_number(total_tx_first),
-            fmt_number(min_tps as usize),
-            fmt_number(avg_tps as usize),
-            fmt_number(max_tps as usize),
-        );
+        #[expect(clippy::cast_possible_truncation, clippy::cast_sign_loss, reason = "throughput values always positive and within usize range")]
+        {
+            println!(
+                "{:>10} | {:>10} | {:>10} | {:>10} | {:>10}",
+                fmt_number(batch_size),
+                fmt_number(total_tx_first),
+                fmt_number(min_tps as usize),
+                fmt_number(avg_tps as usize),
+                fmt_number(max_tps as usize),
+            );
+        }
     }
 
     Ok(())

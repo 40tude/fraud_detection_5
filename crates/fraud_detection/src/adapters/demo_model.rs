@@ -1,4 +1,4 @@
-// Rust guideline compliant 2026-02-16
+// Rust guideline compliant 2026-02-27
 
 //! DEMO model adapter for the `Model` port.
 //!
@@ -69,17 +69,17 @@ impl Model for DemoModel {
         let rate = self.fraud_rate();
         let roll: f64 = self.rng.borrow_mut().random();
         let is_fraud = roll < rate;
-        log::debug!("demo_model.classify: fraud={is_fraud} rate={rate}");
+        tracing::debug!(fraud = is_fraud, rate, "demo_model.classify");
         Ok(is_fraud)
     }
 
     /// Returns `"DEMO"` (FR-003).
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "DEMO"
     }
 
     /// Returns `"4"` for `ModelVersion::N` and `"3"` for `ModelVersion::NMinus1` (FR-004, FR-015).
-    fn active_version(&self) -> &str {
+    fn active_version(&self) -> &'static str {
         match *self.current_version.borrow() {
             ModelVersion::N => "4",
             ModelVersion::NMinus1 => "3",
@@ -94,7 +94,7 @@ impl Model for DemoModel {
     ///
     /// Currently infallible; returns `Ok(())`.
     async fn switch_version(&self, version: ModelVersion) -> Result<(), ModelizerError> {
-        log::info!("demo_model.switch_version: version={version:?}");
+        tracing::info!(?version, "demo_model.switch_version");
         *self.current_version.borrow_mut() = version;
         Ok(())
     }

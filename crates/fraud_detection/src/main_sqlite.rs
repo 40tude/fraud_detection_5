@@ -1,9 +1,9 @@
-// Rust guideline compliant 2026-02-16
+// Rust guideline compliant 2026-02-27
 
-//! Fraud-detection pipeline entry point -- SQLite storage demo.
+//! Fraud-detection pipeline entry point -- `SQLite` storage demo.
 //!
 //! Identical to the main `fraud_detection` binary except that storage is
-//! backed by a SQLite file (`fraud_detection.db` in the current working
+//! backed by a `SQLite` file (`fraud_detection.db` in the current working
 //! directory) instead of an in-memory vector. This demonstrates that the
 //! hexagonal `Storage` port is truly swappable: only this entry point and
 //! the adapter change; all domain and pipeline crates are untouched.
@@ -19,7 +19,7 @@
 //! ```
 //!
 //! The file `fraud_detection.db` is created on first run. Inspect rows with
-//! any SQLite browser (e.g., DB Browser for SQLite).
+//! any `SQLite` browser (e.g., DB Browser for `SQLite`).
 
 mod adapters;
 
@@ -40,6 +40,7 @@ use logger::{Logger, LoggerConfig};
 use modelizer::Modelizer;
 use producer::{Producer, ProducerConfig};
 use std::time::Duration;
+use tracing::Instrument as _;
 
 /// Database file created in the current working directory on first run.
 ///
@@ -49,8 +50,10 @@ const DB_URL: &str = "sqlite:fraud_detection.db";
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> anyhow::Result<()> {
-    // Initialize the log facade before any async work.
-    env_logger::init();
+    // Initialize the tracing subscriber before any async work.
+    tracing_subscriber::fmt()
+        .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+        .init();
 
     // -- Producer: infinite mode by default; press CTRL+C to stop --
     // Set .iterations(10) here for a finite demo run.
@@ -111,9 +114,12 @@ async fn main() -> anyhow::Result<()> {
                 // Close buffer1 so Consumer exits cleanly after draining.
                 buffer1.close();
                 r
-            },
-            consumer_then_close,
-            logger.run(&buffer2, &storage)
+            }
+            .instrument(tracing::info_span!("producer")),
+            consumer_then_close.instrument(tracing::info_span!("consumer")),
+            logger
+                .run(&buffer2, &storage)
+                .instrument(tracing::info_span!("logger"))
         );
         p.context("producer failed")
             .and(c.context("consumer failed"))
@@ -124,7 +130,7 @@ async fn main() -> anyhow::Result<()> {
     // CTRL+C: close buffer1 only; buffer2 cascade follows from consumer_then_close.
     tokio::select! {
         _ = tokio::signal::ctrl_c() => {
-            log::info!("main.shutdown: ctrl_c received, closing buffers");
+            tracing::info!("main.shutdown: ctrl_c received, closing buffers");
             buffer1.close();
         }
         result = pipeline => {
